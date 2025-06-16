@@ -62,7 +62,7 @@ def create_admin_user():
                 username='admin',
                 password='admin123',
                 user_id='admin_001',
-                role='admin',
+                is_admin=True,
                 token_balance=10000
             )
             db.add(admin_user)
@@ -103,15 +103,15 @@ def create_ai_strategy():
         
         db = next(get_db())
         
-        ai_strategy = db.query(AIStrategy).filter(AIStrategy.strategy_name == 'moments_profiling').first()
+        ai_strategy = db.query(AIStrategy).filter(AIStrategy.name == 'moments_profiling').first()
         if not ai_strategy:
             ai_strategy = AIStrategy(
-                strategy_name='moments_profiling',
+                name='moments_profiling',
+                description='朋友圈AI画像分析策略',
                 prompt_template=AI_PROFILING_PROMPT_TEMPLATE,
                 system_message=AI_PROFILING_SYSTEM_MESSAGE,
                 temperature=AI_PROFILING_TEMPERATURE,
-                max_tokens=AI_PROFILING_MAX_TOKENS,
-                is_active=True
+                max_tokens=AI_PROFILING_MAX_TOKENS
             )
             db.add(ai_strategy)
             db.commit()
