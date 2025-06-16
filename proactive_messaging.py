@@ -20,40 +20,27 @@ class ProactiveMessagingService:
         self.ai_service = AIService()  # 初始化AI服务
     
     def generate_personalized_message(self, db: Session, contact_id: int, message_type: str) -> str:
-        """使用AI生成个性化消息，集成全局占位符和JSON格式要求"""
+        """生成个性化消息，为手动跟踪提供简单预设消息避免AI调用超时"""
         try:
             contact = db.query(WechatContact).filter(WechatContact.id == contact_id).first()
             if not contact:
-                return ""
+                return "您好，有什么可以帮助您的吗？"
             
-            user = db.query(User).filter(User.id == contact.owner_id).first()
-            if not user:
-                return ""
+            nickname = contact.nickname or contact.wechat_id
+            message_templates = {
+                "关怀": f"您好 {nickname}，最近怎么样？有什么需要帮助的吗？",
+                "问候": f"您好 {nickname}，希望您一切都好！",
+                "跟进": f"您好 {nickname}，想了解一下您最近的情况。",
+                "提醒": f"您好 {nickname}，有一些重要信息想与您分享。"
+            }
             
-            template_name = self._get_bound_template(db, user.user_id)
-            
-            message_prompt = self._build_message_prompt(db, contact, message_type)
-            
-            json_instruction = f"""
-请严格按照以下JSON格式返回响应：
-{json.dumps(AI_RESPONSE_FORMAT, ensure_ascii=False, indent=2)}
-
-确保返回有效的JSON格式，reply字段包含个性化消息内容。
-"""
-            
-            final_prompt = message_prompt + "\n\n" + json_instruction
-            
-            ai_response = self.ai_service.process_chat(
-                db=db,
-                user_id=user.user_id,
-                message=final_prompt,
-                template_name=template_name
-            )
-            
-            return self._extract_reply_from_response(ai_response)
-            
+            if message_type in message_templates:
+                return message_templates[message_type]
+            else:
+                return f"您好 {nickname}，有什么可以帮助您的吗？"
+                
         except Exception as e:
-            logger.error(f"AI生成个性化消息失败: {str(e)}")
+            logger.error(f"生成个性化消息失败: {str(e)}")
             return "您好，有什么可以帮助您的吗？"
     
     def schedule_proactive_message(self, db: Session, contact_id: int, message_type: str, 
@@ -73,8 +60,66 @@ class ProactiveMessagingService:
             ).first()
             
             if not user_config:
-                logger.info(f"联系人 {contact_id} 的跟踪配置不存在")
-                return False
+                logger.info(f"联系人 {contact_id} 的跟踪配置不存在，自动创建默认配置")
+                
+                default_configs = {
+                    '潜在客户': {
+                        'tracking_cycle_days': 90,
+                        'tracking_periods': 3,
+                        'period_duration_days': 30,
+                        'max_contacts_per_period': 2,
+                        'contact_interval_days': 7,
+                        'silence_threshold_periods': 3
+                    },
+                    '高意向客户': {
+                        'tracking_cycle_days': 60,
+                        'tracking_periods': 2,
+                        'period_duration_days': 30,
+                        'max_contacts_per_period': 3,
+                        'contact_interval_days': 5,
+                        'silence_threshold_periods': 2
+                    },
+                    '成交客户': {
+                        'tracking_cycle_days': 180,
+                        'tracking_periods': 6,
+                        'period_duration_days': 30,
+                        'max_contacts_per_period': 1,
+                        'contact_interval_days': 14,
+                        'silence_threshold_periods': 6
+                    }
+                }
+                
+                if contact.customer_type in default_configs:
+                    try:
+                        config_data = default_configs[contact.customer_type]
+                        user_config = UserTrackingConfig(
+                            user_id=contact.owner_id,
+                            customer_type=contact.customer_type,
+                            auto_tracking_enabled=True,
+                            **config_data
+                        )
+                        db.add(user_config)
+                        db.commit()
+                        
+                        log_entry = OperationLog(
+                            user_id=contact.owner_id,
+                            operation_type='自动创建跟踪配置',
+                            operation_desc=f'为联系人 {contact.nickname or contact.wechat_id} 自动创建 {contact.customer_type} 跟踪配置',
+                            target_type='UserTrackingConfig',
+                            target_id=str(user_config.id)
+                        )
+                        db.add(log_entry)
+                        db.commit()
+                        
+                        logger.info(f"已为用户 {contact.owner_id} 创建 {contact.customer_type} 的默认跟踪配置")
+                        
+                    except Exception as e:
+                        logger.error(f"创建默认跟踪配置失败: {str(e)}")
+                        db.rollback()
+                        return False
+                else:
+                    logger.error(f"未知的客户类型: {contact.customer_type}")
+                    return False
                 
             if not manual_trigger and not user_config.auto_tracking_enabled:
                 logger.info(f"联系人 {contact_id} 的自动跟踪配置未启用")
