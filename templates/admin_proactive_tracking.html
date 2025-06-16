@@ -446,34 +446,7 @@ function viewMessage(messageId) {
         });
 }
 
-document.getElementById('globalConfigForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    
-    fetch('/admin/api/proactive-config', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            deal_frequency: formData.get('deal_frequency'),
-            high_intent_frequency: formData.get('high_intent_frequency'),
-            potential_frequency: formData.get('potential_frequency')
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('配置保存成功');
-        } else {
-            alert('保存失败：' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('保存失败');
-    });
-});
+// 全局配置表单已移除，不再需要事件监听器
 
 document.querySelector('#templateModal').addEventListener('hidden.bs.modal', function() {
     document.getElementById('templateForm').reset();
