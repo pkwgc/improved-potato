@@ -1,0 +1,376 @@
+{% extends "user_base.html" %}
+
+{% block title %}聊天记录 - AI商业化系统{% endblock %}
+
+{% block content %}
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">聊天记录</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="exportChatHistory()">
+                                <i class="bi bi-download"></i> 导出记录
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="clearChatHistory()">
+                                <i class="bi bi-trash"></i> 清空记录
+                            </button>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-funnel"></i> 筛选
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">今天</a></li>
+                                <li><a class="dropdown-item" href="#">本周</a></li>
+                                <li><a class="dropdown-item" href="#">本月</a></li>
+                                <li><a class="dropdown-item" href="#">全部</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if message %}
+                <div class="alert alert-{{ message_type }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endif %}
+                
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_conversations }}</h5>
+                                <p class="card-text">总对话数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_messages }}</h5>
+                                <p class="card-text">总消息数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_tokens }}</h5>
+                                <p class="card-text">总Token消耗</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ avg_response_time }}s</h5>
+                                <p class="card-text">平均响应时间</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 图表区域 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-bar-chart"></i> 对话频率统计</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="conversationFrequencyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-graph-up"></i> Token消耗趋势</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="tokenUsageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 聊天记录列表 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5><i class="bi bi-chat-dots"></i> 聊天记录</h5>
+                            </div>
+                            <div class="col-auto">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="搜索聊天记录...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="searchChatHistory()">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if conversations %}
+                            <div class="accordion" id="chatAccordion">
+                                {% for conversation in conversations %}
+                                <div class="accordion-item mb-3">
+                                    <h2 class="accordion-header" id="heading{{ conversation.id }}">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ conversation.id }}" aria-expanded="false" aria-controls="collapse{{ conversation.id }}">
+                                            <div class="d-flex justify-content-between w-100 me-3">
+                                                <div>
+                                                    <strong>{{ conversation.contact_name or conversation.contact_id }}</strong>
+                                                    <small class="text-muted ms-2">{{ conversation.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge bg-primary">{{ conversation.message_count }} 条消息</span>
+                                                    <span class="badge bg-secondary">{{ conversation.total_tokens }} tokens</span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ conversation.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ conversation.id }}" data-bs-parent="#chatAccordion">
+                                        <div class="accordion-body">
+                                            <div class="chat-messages" style="max-height: 400px; overflow-y: auto;">
+                                                {% for message in conversation.messages %}
+                                                <div class="message mb-2 {% if message.sender_type == 'user' %}text-end{% endif %}">
+                                                    <div class="d-inline-block p-2 rounded {% if message.sender_type == 'user' %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
+                                                        <div>{{ message.content }}</div>
+                                                        <small class="{% if message.sender_type == 'user' %}text-white-50{% else %}text-muted{% endif %}">
+                                                            {{ message.created_at.strftime('%H:%M') }}
+                                                            {% if message.tokens %}({{ message.tokens }} tokens){% endif %}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- 分页 -->
+                            {% if total_pages > 1 %}
+                            <nav aria-label="聊天记录分页" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if page > 1 %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('user_chat_history', page=page-1) }}" aria-label="上一页">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for p in range(1, total_pages + 1) %}
+                                        {% if p == page %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ p }}</span>
+                                            </li>
+                                        {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('user_chat_history', page=p) }}">{{ p }}</a>
+                                            </li>
+                                        {% elif p == page - 3 or p == page + 3 %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if page < total_pages %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('user_chat_history', page=page+1) }}" aria-label="下一页">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-chat-dots text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-3">暂无聊天记录</p>
+                                {% if not search_term %}
+                                <a href="{{ url_for('user_contacts') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus"></i> 开始聊天
+                                </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+<!-- 确认清空聊天记录模态框 -->
+<div class="modal fade" id="clearHistoryModal" tabindex="-1" aria-labelledby="clearHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clearHistoryModalLabel">确认清空聊天记录</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要清空所有聊天记录吗？此操作不可恢复。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" onclick="confirmClearHistory()">确认清空</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导出模态框 -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">导出聊天记录</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要导出所有聊天记录吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <a href="{{ url_for('admin_export_billing_data') }}" class="btn btn-primary">确定导出</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+        function toggleConversation(id) {
+            const messagesDiv = document.getElementById(`messages-${id}`);
+            const toggleIcon = document.getElementById(`toggle-icon-${id}`);
+            const isVisible = window.getComputedStyle(messagesDiv).display !== 'none';
+
+            if (isVisible) {
+                messagesDiv.style.display = 'none';
+                toggleIcon.classList.remove('bi-chevron-up');
+                toggleIcon.classList.add('bi-chevron-down');
+            } else {
+                messagesDiv.style.display = 'block';
+                toggleIcon.classList.remove('bi-chevron-down');
+                toggleIcon.classList.add('bi-chevron-up');
+            }
+        }
+        
+        function exportChatHistory() {
+            window.location.href = "{{ url_for('user_chat_history', export=1) }}";
+        }
+        
+        function clearChatHistory() {
+            const clearHistoryModal = new bootstrap.Modal(document.getElementById('clearHistoryModal'));
+            clearHistoryModal.show();
+        }
+        
+        function confirmClearHistory() {
+            window.location.href = "{{ url_for('user_dashboard') }}";
+        }
+        
+        function searchChatHistory() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!searchTerm) return;
+            
+            window.location.href = "{{ url_for('user_chat_history') }}?search=" + encodeURIComponent(searchTerm);
+        }
+        
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchChatHistory();
+            }
+        });
+        
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.chat-messages').forEach(div => div.style.display = 'none');
+
+    document.body.addEventListener('click', function (e) {
+        const btn = e.target.closest('.toggle-btn');
+        if (!btn) return;
+
+        const id = btn.getAttribute('data-toggle-id');
+        const messagesDiv = document.getElementById(`messages-${id}`);
+        const toggleIcon = document.getElementById(`toggle-icon-${id}`);
+        const isVisible = window.getComputedStyle(messagesDiv).display !== 'none';
+
+        if (isVisible) {
+            messagesDiv.style.display = 'none';
+            toggleIcon.classList.remove('bi-chevron-up');
+            toggleIcon.classList.add('bi-chevron-down');
+        } else {
+            messagesDiv.style.display = 'block';
+            toggleIcon.classList.remove('bi-chevron-down');
+            toggleIcon.classList.add('bi-chevron-up');
+        }
+    });
+
+            const conversationFrequencyCtx = document.getElementById('conversationFrequencyChart').getContext('2d');
+            new Chart(conversationFrequencyCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ conversation_frequency_labels|safe }},
+                    datasets: [{
+                        label: '对话次数',
+                        data: {{ conversation_frequency_data|safe }},
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '最近7天对话频率'
+                        }
+                    }
+                }
+            });
+            
+            const tokenUsageCtx = document.getElementById('tokenUsageChart').getContext('2d');
+            new Chart(tokenUsageCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ token_usage_labels|safe }},
+                    datasets: [{
+                        label: 'Token消耗',
+                        data: {{ token_usage_data|safe }},
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '最近7天Token消耗趋势'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

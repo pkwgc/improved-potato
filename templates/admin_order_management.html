@@ -1,0 +1,245 @@
+{% extends "admin_base.html" %}
+
+{% block title %}订单管理 - 管理后台{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .order-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .order-header {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px 10px 0 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .order-header h5 {
+        margin: 0;
+        color: #495057;
+    }
+    
+    .user-filter {
+        margin-bottom: 20px;
+    }
+    
+    .status-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .status-pending {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .status-processing {
+        background-color: #17a2b8;
+        color: #fff;
+    }
+    
+    .status-completed {
+        background-color: #28a745;
+        color: #fff;
+    }
+    
+    .status-cancelled {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    
+    .payment-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .payment-unpaid {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    
+    .payment-paid {
+        background-color: #28a745;
+        color: #fff;
+    }
+    
+    .payment-refunded {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    
+    .filter-section {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">订单管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('admin_order_management', status='pending') }}" class="btn btn-sm btn-outline-secondary">待处理</a>
+            <a href="{{ url_for('admin_order_management', status='processing') }}" class="btn btn-sm btn-outline-secondary">处理中</a>
+            <a href="{{ url_for('admin_order_management', status='completed') }}" class="btn btn-sm btn-outline-secondary">已完成</a>
+            <a href="{{ url_for('admin_order_management', status='cancelled') }}" class="btn btn-sm btn-outline-secondary">已取消</a>
+            <a href="{{ url_for('admin_order_management') }}" class="btn btn-sm btn-outline-primary">全部</a>
+        </div>
+    </div>
+</div>
+
+{% if message %}
+<div class="alert alert-{{ message_type }}" role="alert">
+    {{ message }}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="filter-section">
+            <form method="get" action="{{ url_for('admin_order_management') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="user_id" class="form-label">用户</label>
+                        <select class="form-select" id="user_id" name="user_id">
+                            <option value="">所有用户</option>
+                            {% for u in users %}
+                            <option value="{{ u.id }}" {% if selected_user_id == u.id %}selected{% endif %}>
+                                {{ u.username }} ({{ u.user_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">订单状态</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">所有状态</option>
+                            <option value="pending" {% if status == 'pending' %}selected{% endif %}>待处理</option>
+                            <option value="processing" {% if status == 'processing' %}selected{% endif %}>处理中</option>
+                            <option value="completed" {% if status == 'completed' %}selected{% endif %}>已完成</option>
+                            <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>已取消</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="payment_status" class="form-label">支付状态</label>
+                        <select class="form-select" id="payment_status" name="payment_status">
+                            <option value="">所有状态</option>
+                            <option value="unpaid" {% if payment_status == 'unpaid' %}selected{% endif %}>未支付</option>
+                            <option value="paid" {% if payment_status == 'paid' %}selected{% endif %}>已支付</option>
+                            <option value="refunded" {% if payment_status == 'refunded' %}selected{% endif %}>已退款</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_range" class="form-label">日期范围</label>
+                        <select class="form-select" id="date_range" name="date_range">
+                            <option value="">所有时间</option>
+                            <option value="today" {% if date_range == 'today' %}selected{% endif %}>今天</option>
+                            <option value="yesterday" {% if date_range == 'yesterday' %}selected{% endif %}>昨天</option>
+                            <option value="week" {% if date_range == 'week' %}selected{% endif %}>本周</option>
+                            <option value="month" {% if date_range == 'month' %}selected{% endif %}>本月</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> 查询
+                        </button>
+                        <a href="{{ url_for('admin_order_management') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> 重置
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card order-card">
+            <div class="order-header">
+                <h5><i class="bi bi-cart"></i> 订单列表</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>订单号</th>
+                                <th>用户</th>
+                                <th>订单日期</th>
+                                <th>商品数量</th>
+                                <th>订单金额</th>
+                                <th>订单状态</th>
+                                <th>支付状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if orders %}
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>{{ order.user.username }}</td>
+                                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ order.items|length }}</td>
+                                    <td>¥{{ order.total_amount }}</td>
+                                    <td>
+                                        <span class="badge status-badge status-{{ order.status }}">
+                                            {% if order.status == 'pending' %}待处理
+                                            {% elif order.status == 'processing' %}处理中
+                                            {% elif order.status == 'completed' %}已完成
+                                            {% elif order.status == 'cancelled' %}已取消
+                                            {% else %}{{ order.status }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge payment-badge payment-{{ order.payment_status }}">
+                                            {% if order.payment_status == 'unpaid' %}未支付
+                                            {% elif order.payment_status == 'paid' %}已支付
+                                            {% elif order.payment_status == 'refunded' %}已退款
+                                            {% else %}{{ order.payment_status }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> 查看详情
+                                        </a>
+                                        {% if order.status == 'pending' %}
+                                        <a href="{{ url_for('admin_update_order_status', order_id=order.id, status='processing') }}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle"></i> 开始处理
+                                        </a>
+                                        {% elif order.status == 'processing' %}
+                                        <a href="{{ url_for('admin_update_order_status', order_id=order.id, status='completed') }}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle"></i> 标记完成
+                                        </a>
+                                        {% endif %}
+                                        {% if order.status != 'cancelled' and order.status != 'completed' %}
+                                        <a href="{{ url_for('admin_update_order_status', order_id=order.id, status='cancelled') }}" class="btn btn-sm btn-danger" onclick="return confirm('确定要取消此订单吗？')">
+                                            <i class="bi bi-x-circle"></i> 取消订单
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center">暂无订单数据</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "user_base.html" %}
+
+{% block title %}朋友圈详情{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">朋友圈详情</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('user_moments') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h5 class="card-title mb-1">{{ moment.wechat_id }}</h5>
+                <small class="text-muted">{{ moment.created_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+            <div>
+                <span class="badge bg-primary me-2">
+                    <i class="bi bi-heart"></i> {{ moment.like_count }}
+                </span>
+                <span class="badge bg-secondary">
+                    <i class="bi bi-chat"></i> {{ moment.comment_count }}
+                </span>
+            </div>
+        </div>
+        
+        {% if moment.content %}
+            <p class="card-text">{{ moment.content }}</p>
+        {% endif %}
+        
+        {% if moment.media_urls %}
+            {% set media_list = moment.media_urls %}
+            {% if media_list is string %}
+                {% set media_list = media_list|from_json %}
+            {% endif %}
+            {% if media_list %}
+                <div class="row g-2 mb-3">
+                    {% for media_url in media_list %}
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <img src="{{ media_url|proxy_url }}" class="img-fluid rounded" alt="朋友圈图片" style="cursor: pointer;" onclick="showImageModal('{{ media_url|proxy_url }}')">
+							
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">评论管理</h5>
+    </div>
+    <div class="card-body">
+        <form id="commentForm" class="mb-4">
+            <div class="mb-3">
+                <label for="commentContent" class="form-label">添加评论</label>
+                <textarea class="form-control" id="commentContent" rows="3" placeholder="输入评论内容..."></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="commentWechatId" class="form-label">评论微信号</label>
+                    <input type="text" class="form-control" id="commentWechatId" value="{{ user.user_id }}" placeholder="微信号">
+                </div>
+                <div class="col-md-6">
+                    <label for="parentCommentId" class="form-label">回复评论ID（可选）</label>
+                    <input type="number" class="form-control" id="parentCommentId" placeholder="留空表示主评论">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">发布评论</button>
+        </form>
+        
+        <div id="commentsList">
+            {% if comments %}
+                {% for comment in comments %}
+                    <div class="comment-item border-bottom pb-3 mb-3" data-comment-id="{{ comment.id }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <strong class="me-2">{{ comment.wechat_id }}</strong>
+                                    <small class="text-muted">{{ comment.created_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                    {% if comment.parent_id %}
+                                        <span class="badge bg-info ms-2">回复</span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-2">{{ comment.content }}</p>
+                                <div class="comment-actions">
+                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="replyToComment({{ comment.id }}, '{{ comment.wechat_id }}')">
+                                        <i class="bi bi-reply"></i> 回复
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteComment({{ comment.id }})">
+                                        <i class="bi bi-trash"></i> 删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-chat-dots" style="font-size: 2rem; color: #dee2e6;"></i>
+                    <p class="mt-2 text-muted">暂无评论</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">查看图片</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" class="img-fluid" alt="朋友圈图片">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showImageModal(imageUrl) {
+    document.getElementById('modalImage').src = imageUrl;
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+
+function replyToComment(commentId, wechatId) {
+    document.getElementById('parentCommentId').value = commentId;
+    document.getElementById('commentContent').placeholder = `回复 ${wechatId}...`;
+    document.getElementById('commentContent').focus();
+}
+
+function deleteComment(commentId) {
+    if (confirm('确定要删除这条评论吗？')) {
+        fetch(`/api/moments/{{ moment.id }}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('删除失败：' + (data.error || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败，请稍后重试');
+        });
+    }
+}
+
+document.getElementById('commentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const content = document.getElementById('commentContent').value.trim();
+    const wechatId = document.getElementById('commentWechatId').value.trim();
+    const parentId = document.getElementById('parentCommentId').value;
+    
+    if (!content) {
+        alert('请输入评论内容');
+        return;
+    }
+    
+    if (!wechatId) {
+        alert('请输入微信号');
+        return;
+    }
+    
+    const data = {
+        content: content,
+        wechat_id: wechatId
+    };
+    
+    if (parentId) {
+        data.parent_id = parseInt(parentId);
+    }
+    
+    fetch(`/api/moments/{{ moment.id }}/comments`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('发布失败：' + (data.error || '未知错误'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('发布失败，请稍后重试');
+    });
+});
+</script>
+{% endblock %}

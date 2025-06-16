@@ -1,0 +1,212 @@
+{% extends "admin_base.html" %}
+
+{% block title %}用户库存管理 - 管理后台{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .inventory-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .inventory-header {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px 10px 0 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .inventory-header h5 {
+        margin: 0;
+        color: #495057;
+    }
+    
+    .user-filter {
+        margin-bottom: 20px;
+    }
+    
+    .item-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .low-stock {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    
+    .medium-stock {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .high-stock {
+        background-color: #28a745;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">用户库存管理</h1>
+</div>
+
+{% if message %}
+<div class="alert alert-{{ message_type }}" role="alert">
+    {{ message }}
+</div>
+{% endif %}
+
+<div class="row user-filter">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{{ url_for('admin_inventory') }}">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-auto">
+                            <label for="user_id" class="col-form-label">选择用户:</label>
+                        </div>
+                        <div class="col-auto">
+                            <select class="form-select" id="user_id" name="user_id">
+                                <option value="">所有用户</option>
+                                {% for u in users %}
+                                <option value="{{ u.id }}" {% if selected_user_id == u.id %}selected{% endif %}>
+                                    {{ u.username }} ({{ u.user_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> 查询
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card inventory-card">
+            <div class="inventory-header">
+                <h5><i class="bi bi-box-seam"></i> 用户商品库存</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>用户</th>
+                                <th>商品名称</th>
+                                <th>商品ID</th>
+                                <th>剩余数量</th>
+                                <th>单价(元)</th>
+                                <th>总价值(元)</th>
+                                <th>备注</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if inventory_items %}
+                                {% for item in inventory_items %}
+                                <tr>
+                                    <td>{{ item.inventory_upload.user.username }}</td>
+                                    <td>{{ item.product_name }}</td>
+                                    <td>{{ item.product_id or '-' }}</td>
+                                    <td>
+                                        {{ item.quantity }}
+                                        {% if item.quantity <= 5 %}
+                                        <span class="badge item-badge low-stock">库存紧张</span>
+                                        {% elif item.quantity <= 20 %}
+                                        <span class="badge item-badge medium-stock">库存告警</span>
+                                        {% else %}
+                                        <span class="badge item-badge high-stock">库存充足</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.price or '-' }}</td>
+                                    <td>{{ item.total_price or '-' }}</td>
+                                    <td>{{ item.notes or '-' }}</td>
+                                    <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '-' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_view_user_inventory', user_id=item.inventory_upload.user_id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> 查看用户库存
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center">暂无商品数据</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card inventory-card">
+            <div class="inventory-header">
+                <h5><i class="bi bi-list-ul"></i> 用户上传历史</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>用户</th>
+                                <th>文件名</th>
+                                <th>上传时间</th>
+                                <th>状态</th>
+                                <th>备注</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if inventory_uploads %}
+                                {% for upload in inventory_uploads %}
+                                <tr>
+                                    <td>{{ upload.user.username }}</td>
+                                    <td>{{ upload.original_filename or upload.filename }}</td>
+									<td>{{ upload.upload_time.strftime('%Y-%m-%d %H:%M') if upload.upload_time else '-' }}</td>
+                                    <td>
+                                        {% if upload.status == 'success' %}
+                                        <span class="badge bg-success">成功</span>
+                                        {% elif upload.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">处理中</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">失败</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ upload.notes or '-' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_download_inventory', upload_id=upload.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-download"></i> 下载
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">暂无上传历史</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

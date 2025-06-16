@@ -1,0 +1,317 @@
+{% extends "user_base.html" %}
+
+{% block title %}数据统计与分析{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">意图分布统计</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" onclick="refreshIntentChart()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if intent_stats %}
+                    <canvas id="intentChart" width="400" height="200"></canvas>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 暂无意图数据
+                        <br><small>当客户开始与您互动后，意图分布统计将在此显示</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">用户类型分析</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" onclick="refreshUserTypeChart()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if user_type_stats %}
+                    <canvas id="userTypeChart" width="400" height="200"></canvas>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 暂无用户类型数据
+                        <br><small>系统将根据用户互动行为自动分析用户类型</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">数据看板</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">总用户数</span>
+                                    <span class="info-box-number">{{ activity_stats.total_users or 0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-chart-line"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">平均活跃度</span>
+                                    <span class="info-box-number">{{ "%.2f"|format(activity_stats.avg_score or 0) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-comments"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">意图类型数</span>
+                                    <span class="info-box-number">{{ intent_stats|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger"><i class="fas fa-tags"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">用户分层数</span>
+                                    <span class="info-box-number">{{ user_type_stats|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h5>详细统计信息</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card card-outline card-primary">
+                                        <div class="card-header">
+                                            <h3 class="card-title">意图类型详情</h3>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            {% if intent_stats %}
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>意图类型</th>
+                                                        <th>数量</th>
+                                                        <th>占比</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% set total_intents = intent_stats|sum(attribute='count') %}
+                                                    {% for stat in intent_stats %}
+                                                    <tr>
+                                                        <td>{{ stat.intent_type }}</td>
+                                                        <td>{{ stat.count }}</td>
+                                                        <td>{{ "%.1f"|format((stat.count / total_intents * 100) if total_intents > 0 else 0) }}%</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                            {% else %}
+                                            <div class="p-3 text-muted">暂无数据</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card card-outline card-success">
+                                        <div class="card-header">
+                                            <h3 class="card-title">用户类型详情</h3>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            {% if user_type_stats %}
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>用户类型</th>
+                                                        <th>数量</th>
+                                                        <th>占比</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% set total_users = user_type_stats|sum(attribute='count') %}
+                                                    {% for stat in user_type_stats %}
+                                                    <tr>
+                                                        <td>
+                                                            {% if stat.value_level == '高价值用户' %}
+                                                            <span class="badge badge-success">{{ stat.value_level }}</span>
+                                                            {% elif stat.value_level == '潜力用户' %}
+                                                            <span class="badge badge-warning">{{ stat.value_level }}</span>
+                                                            {% elif stat.value_level == '沉默用户' %}
+                                                            <span class="badge badge-secondary">{{ stat.value_level }}</span>
+                                                            {% elif stat.value_level == '已成交用户' %}
+                                                            <span class="badge badge-primary">{{ stat.value_level }}</span>
+                                                            {% else %}
+                                                            <span class="badge badge-info">{{ stat.value_level }}</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ stat.count }}</td>
+                                                        <td>{{ "%.1f"|format((stat.count / total_users * 100) if total_users > 0 else 0) }}%</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                            {% else %}
+                                            <div class="p-3 text-muted">暂无数据</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let intentChart = null;
+let userTypeChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+function initializeCharts() {
+    {% if intent_stats %}
+    const intentCtx = document.getElementById('intentChart').getContext('2d');
+    intentChart = new Chart(intentCtx, {
+        type: 'pie',
+        data: {
+            labels: [{% for stat in intent_stats %}'{{ stat.intent_type }}'{% if not loop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for stat in intent_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+    
+    {% if user_type_stats %}
+    const userTypeCtx = document.getElementById('userTypeChart').getContext('2d');
+    userTypeChart = new Chart(userTypeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for stat in user_type_stats %}'{{ stat.value_level }}'{% if not loop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for stat in user_type_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#28a745', '#ffc107', '#dc3545', '#17a2b8', 
+                    '#6f42c1', '#fd7e14', '#20c997', '#6c757d'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+}
+
+function refreshIntentChart() {
+    fetch('/api/user/intent_distribution')
+        .then(response => response.json())
+        .then(data => {
+            if (intentChart && data.labels && data.data) {
+                intentChart.data.labels = data.labels;
+                intentChart.data.datasets[0].data = data.data;
+                intentChart.update();
+                showNotification('意图分布数据已更新', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('更新失败', 'error');
+        });
+}
+
+function refreshUserTypeChart() {
+    location.reload();
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', notification);
+    
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

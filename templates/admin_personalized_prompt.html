@@ -1,0 +1,118 @@
+{% extends "admin_base.html" %}
+
+{% block title %}个性化提示词设置{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-chat-square-text"></i> 个性化提示词设置</h5>
+                </div>
+                <div class="card-body">
+                    {% if message %}
+                    <div class="alert alert-{{ message_type }}">
+                        {{ message }}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{{ url_for('admin_update_personalized_prompt_settings') }}">
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="enablePersonalizedPrompt" name="enable_personalized_prompt" {% if ENABLE_PERSONALIZED_PROMPT %}checked{% endif %}>
+                            <label class="form-check-label" for="enablePersonalizedPrompt">启用个性化提示词</label>
+                            <small class="form-text text-muted">启用后，系统将为每个用户生成个性化的提示词，包含用户信息和商品库存</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="personalizedPromptTemplate" class="form-label">个性化提示词模板</label>
+                            <textarea class="form-control" id="personalizedPromptTemplate" name="personalized_prompt_template" rows="15">{{ PERSONALIZED_PROMPT_TEMPLATE }}</textarea>
+                            <small class="form-text text-muted">
+                                可用的占位符：<br>
+                                {行业} - 用户所属行业<br>
+                                {name} - 用户名称<br>
+                                {兴趣} - 用户兴趣爱好<br>
+                                {最近购买} - 用户最近购买的商品<br>
+                                {product_inventory} - 用户的商品库存信息<br>
+                                {user_input} - 用户当前输入（自动填充，无需手动设置）
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="custom_placeholders" class="form-label">自定义占位符</label>
+                            <div id="placeholders-container">
+                                <!-- 这里将通过JavaScript动态添加占位符输入框 -->
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary mt-2" id="add-placeholder">添加占位符</button>
+                            <input type="hidden" id="custom_placeholders" name="custom_placeholders" value="{{ CUSTOM_PLACEHOLDERS }}">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">保存设置</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('placeholders-container');
+        const addButton = document.getElementById('add-placeholder');
+        const hiddenInput = document.getElementById('custom_placeholders');
+        
+        let placeholders = [];
+        try {
+            placeholders = JSON.parse('{{ CUSTOM_PLACEHOLDERS|safe }}');
+        } catch (e) {
+            placeholders = [];
+            console.error('解析自定义占位符失败:', e);
+        }
+        
+        function renderPlaceholders() {
+            container.innerHTML = '';
+            placeholders.forEach((placeholder, index) => {
+                const row = document.createElement('div');
+                row.className = 'row mb-2';
+                row.innerHTML = `
+                    <div class="col-5">
+                        <input type="text" class="form-control" placeholder="占位符名称" value="${placeholder.name || ''}" 
+                               onchange="updatePlaceholder(${index}, 'name', this.value)">
+                    </div>
+                    <div class="col-5">
+                        <input type="text" class="form-control" placeholder="默认值" value="${placeholder.default || ''}"
+                               onchange="updatePlaceholder(${index}, 'default', this.value)">
+                    </div>
+                    <div class="col-2">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removePlaceholder(${index})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+            
+            // 更新隐藏输入字段
+            hiddenInput.value = JSON.stringify(placeholders);
+        }
+        
+        window.updatePlaceholder = function(index, field, value) {
+            placeholders[index][field] = value;
+            hiddenInput.value = JSON.stringify(placeholders);
+        };
+        
+        window.removePlaceholder = function(index) {
+            placeholders.splice(index, 1);
+            renderPlaceholders();
+        };
+        
+        addButton.addEventListener('click', function() {
+            placeholders.push({ name: '', default: '' });
+            renderPlaceholders();
+        });
+        
+        // 初始渲染
+        renderPlaceholders();
+    });
+</script>
+{% endblock %}

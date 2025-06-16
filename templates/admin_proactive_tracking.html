@@ -1,0 +1,418 @@
+{% extends "admin_base.html" %}
+
+{% block title %}智能跟踪管理{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">智能跟踪管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i> 刷新数据
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#templateModal">
+                <i class="bi bi-plus-circle"></i> 添加话术模板
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 跟踪统计 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people"></i> 启用跟踪</h5>
+                <h2 class="card-text">{{ tracking_stats.enabled_count }}</h2>
+                <p class="card-text">个联系人</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-send"></i> 今日发送</h5>
+                <h2 class="card-text">{{ tracking_stats.today_sent }}</h2>
+                <p class="card-text">条消息</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-reply"></i> 回复率</h5>
+                <h2 class="card-text">{{ tracking_stats.response_rate }}%</h2>
+                <p class="card-text">平均回复率</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-clock"></i> 待发送</h5>
+                <h2 class="card-text">{{ tracking_stats.pending_count }}</h2>
+                <p class="card-text">条消息</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 跟踪配置 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-gear"></i> 全局跟踪配置</h5>
+    </div>
+    <div class="card-body">
+        <form id="globalConfigForm" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">成交客户跟踪频率</label>
+                <select class="form-select" name="deal_frequency">
+                    <option value="daily">每日</option>
+                    <option value="weekly" selected>每周</option>
+                    <option value="monthly">每月</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">高意向客户跟踪频率</label>
+                <select class="form-select" name="high_intent_frequency">
+                    <option value="daily" selected>每日</option>
+                    <option value="weekly">每周</option>
+                    <option value="monthly">每月</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">潜在客户跟踪频率</label>
+                <select class="form-select" name="potential_frequency">
+                    <option value="daily">每日</option>
+                    <option value="weekly" selected>每周</option>
+                    <option value="monthly">每月</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> 保存配置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 话术模板管理 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-chat-text"></i> 话术模板管理</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>模板名称</th>
+                        <th>适用场景</th>
+                        <th>模板内容</th>
+                        <th>使用次数</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for template in message_templates %}
+                    <tr>
+                        <td><strong>{{ template.name }}</strong></td>
+                        <td>
+                            <span class="badge bg-secondary">{{ template.scenario }}</span>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 300px;" title="{{ template.content }}">
+                                {{ template.content }}
+                            </div>
+                        </td>
+                        <td>{{ template.usage_count }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editTemplate({{ template.id }})">
+                                <i class="bi bi-pencil"></i> 编辑
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTemplate({{ template.id }})">
+                                <i class="bi bi-trash"></i> 删除
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 主动消息记录 -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-list-ul"></i> 主动消息记录</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>联系人</th>
+                        <th>消息类型</th>
+                        <th>内容预览</th>
+                        <th>计划时间</th>
+                        <th>发送时间</th>
+                        <th>状态</th>
+                        <th>是否回复</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for message in proactive_messages %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle me-2"></i>
+                                <div>
+                                    <strong>{{ message.contact.nickname or message.contact.remark }}</strong><br>
+                                    <small class="text-muted">{{ message.contact.wechat_id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ message.message_type }}</span>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 200px;" title="{{ message.content }}">
+                                {{ message.content }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if message.scheduled_time %}
+                                {{ message.scheduled_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">立即</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if message.sent_time %}
+                                {{ message.sent_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">未发送</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if message.status == 'sent' %}success{% elif message.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                {% if message.status == 'sent' %}已发送{% elif message.status == 'failed' %}发送失败{% else %}待发送{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if message.response_received %}
+                                <i class="bi bi-check-circle text-success"></i> 已回复
+                            {% else %}
+                                <i class="bi bi-x-circle text-muted"></i> 未回复
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if message.status == 'pending' %}
+                                <button class="btn btn-sm btn-outline-primary" onclick="sendNow({{ message.id }})">
+                                    <i class="bi bi-send"></i> 立即发送
+                                </button>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-info" onclick="viewMessage({{ message.id }})">
+                                <i class="bi bi-eye"></i> 查看
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 话术模板模态框 -->
+<div class="modal fade" id="templateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">话术模板</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="templateForm">
+                    <input type="hidden" id="templateId" name="template_id">
+                    <div class="mb-3">
+                        <label class="form-label">模板名称</label>
+                        <input type="text" class="form-control" id="templateName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">适用场景</label>
+                        <select class="form-select" id="templateScenario" name="scenario" required>
+                            <option value="关怀">关怀</option>
+                            <option value="营销">营销</option>
+                            <option value="复购提醒">复购提醒</option>
+                            <option value="节日问候">节日问候</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">模板内容</label>
+                        <textarea class="form-control" id="templateContent" name="content" rows="4" required 
+                                  placeholder="支持占位符：{name} - 客户姓名, {product} - 产品名称, {festival} - 节日名称"></textarea>
+                        <div class="form-text">
+                            可用占位符：{name}（客户姓名）、{product}（产品名称）、{festival}（节日名称）
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveTemplate()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshData() {
+    location.reload();
+}
+
+function editTemplate(templateId) {
+    fetch(`/admin/api/message-template/${templateId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('templateId').value = templateId;
+            document.getElementById('templateName').value = data.name;
+            document.getElementById('templateScenario').value = data.scenario;
+            document.getElementById('templateContent').value = data.content;
+            
+            document.querySelector('#templateModal .modal-title').textContent = '编辑话术模板';
+            new bootstrap.Modal(document.getElementById('templateModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取模板信息失败');
+        });
+}
+
+function saveTemplate() {
+    const formData = new FormData(document.getElementById('templateForm'));
+    const templateId = formData.get('template_id');
+    const isEdit = templateId && templateId !== '';
+    
+    const url = isEdit ? `/admin/api/message-template/${templateId}` : '/admin/api/message-template';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: formData.get('name'),
+            scenario: formData.get('scenario'),
+            content: formData.get('content')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('templateModal')).hide();
+            location.reload();
+        } else {
+            alert('保存失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败');
+    });
+}
+
+function deleteTemplate(templateId) {
+    if (confirm('确定要删除这个模板吗？')) {
+        fetch(`/admin/api/message-template/${templateId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败');
+        });
+    }
+}
+
+function sendNow(messageId) {
+    if (confirm('确定要立即发送这条消息吗？')) {
+        fetch(`/admin/api/proactive-message/${messageId}/send`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('发送失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('发送失败');
+        });
+    }
+}
+
+function viewMessage(messageId) {
+    fetch(`/admin/api/proactive-message/${messageId}`)
+        .then(response => response.json())
+        .then(data => {
+            alert(`消息详情：\n\n类型：${data.message_type}\n内容：${data.content}\n状态：${data.status}`);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取消息详情失败');
+        });
+}
+
+document.getElementById('globalConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/admin/api/proactive-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            deal_frequency: formData.get('deal_frequency'),
+            high_intent_frequency: formData.get('high_intent_frequency'),
+            potential_frequency: formData.get('potential_frequency')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('配置保存成功');
+        } else {
+            alert('保存失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败');
+    });
+});
+
+document.querySelector('#templateModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('templateForm').reset();
+    document.getElementById('templateId').value = '';
+    document.querySelector('#templateModal .modal-title').textContent = '话术模板';
+});
+</script>
+{% endblock %}

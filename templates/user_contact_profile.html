@@ -1,0 +1,242 @@
+{% extends "user_base.html" %}
+
+{% block title %}客户详情 - {{ contact.nickname or contact.remark or '未知' }}{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .profile-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .profile-header {
+        background-color: #4a6baf;
+        color: white;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+    }
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #fff;
+        color: #4a6baf;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin-bottom: 15px;
+    }
+    .intent-badge {
+        font-size: 0.9em;
+        padding: 0.5em 1em;
+    }
+    .message-item {
+        border-left: 3px solid #dee2e6;
+        padding-left: 15px;
+        margin-bottom: 15px;
+    }
+    .message-ai {
+        border-left-color: #0d6efd;
+    }
+    .message-user {
+        border-left-color: #198754;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <a href="{{ url_for('user_customer_management') }}" class="text-decoration-none me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        客户详情
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editContact()">
+                <i class="bi bi-pencil"></i> 编辑
+            </button>
+            <button type="button" class="btn btn-sm btn-success" onclick="sendMessage()">
+                <i class="bi bi-send"></i> 发消息
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card profile-card mb-4">
+            <div class="profile-header">
+                <div class="profile-avatar mx-auto">
+                    {% if contact.avatar %}
+                        <img src="{{ contact.avatar }}" class="rounded-circle" width="100" height="100">
+                    {% else %}
+                        <i class="bi bi-person"></i>
+                    {% endif %}
+                </div>
+                <h4 class="text-center">{{ contact.nickname or contact.remark or '未知' }}</h4>
+                <p class="text-center mb-0">微信ID: {{ contact.wechat_id }}</p>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>客户类型:</span>
+                    <span><strong>{{ contact.customer_type }}</strong></span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>意向等级:</span>
+                    <span>
+                        {% if latest_intent %}
+                            <span class="badge intent-badge bg-{% if latest_intent.intent_type == '高意向' %}danger{% elif latest_intent.intent_type == '一般意向' %}warning{% elif latest_intent.intent_type == '已成交' %}success{% else %}secondary{% endif %}">
+                                {{ latest_intent.intent_type }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">未知</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>自动跟踪:</span>
+                    <span>
+                        {% if contact.auto_follow_enabled %}
+                            <span class="badge bg-success">已启用</span>
+                        {% else %}
+                            <span class="badge bg-secondary">已禁用</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>跟踪频率:</span>
+                    <span><strong>{{ contact.follow_frequency }}</strong></span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>AI回复:</span>
+                    <span>
+                        {% if contact.ai_reply_enabled %}
+                            <span class="badge bg-primary">已启用</span>
+                        {% else %}
+                            <span class="badge bg-secondary">已禁用</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>最近活动:</span>
+                    <span>
+                        {% if contact.last_active_at %}
+                            <strong>{{ contact.last_active_at.strftime('%Y-%m-%d %H:%M') }}</strong>
+                        {% else %}
+                            <span class="text-muted">从未活动</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>创建时间:</span>
+                    <span><strong>{{ contact.created_at.strftime('%Y-%m-%d') }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-person-lines-fill"></i> 客户画像</h5>
+            </div>
+            <div class="card-body">
+                {% if customer_profiles %}
+                    <div class="row">
+                        {% for profile in customer_profiles %}
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h6 class="text-primary">{{ profile.profile_type }}</h6>
+                                <p class="mb-1">{{ profile.profile_value }}</p>
+                                <small class="text-muted">
+                                    置信度: {{ "%.1f"|format(profile.confidence * 100) }}% | 
+                                    来源: {{ profile.source }} | 
+                                    {{ profile.created_at.strftime('%Y-%m-%d') }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">暂无客户画像信息</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-chat-dots"></i> 最近消息记录</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_messages %}
+                    {% for message in recent_messages %}
+                    <div class="message-item {% if message.is_from_ai %}message-ai{% else %}message-user{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <p class="mb-1">{{ message.content }}</p>
+                                <small class="text-muted">
+                                    {% if message.is_from_ai %}
+                                        <i class="bi bi-robot"></i> AI回复
+                                    {% else %}
+                                        <i class="bi bi-person"></i> 客户消息
+                                    {% endif %}
+                                    | {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">暂无消息记录</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-send"></i> 主动消息记录</h5>
+            </div>
+            <div class="card-body">
+                {% if proactive_messages %}
+                    {% for message in proactive_messages %}
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="text-primary">{{ message.message_type }}</h6>
+                                <p class="mb-1">{{ message.content }}</p>
+                                <small class="text-muted">
+                                    状态: 
+                                    <span class="badge bg-{% if message.status == 'sent' %}success{% elif message.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                        {{ message.status }}
+                                    </span>
+                                    | {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% if message.sent_time %}
+                                        | 发送时间: {{ message.sent_time.strftime('%Y-%m-%d %H:%M') }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">暂无主动消息记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editContact() {
+    window.location.href = "{{ url_for('user_customer_management') }}#contact-{{ contact.id }}";
+}
+
+function sendMessage() {
+    window.location.href = "{{ url_for('user_customer_management') }}#send-{{ contact.id }}";
+}
+</script>
+{% endblock %}

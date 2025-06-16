@@ -1,0 +1,218 @@
+{% extends "user_base.html" %}
+
+{% block title %}知识库管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">知识库管理</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addKnowledgeModal">
+                            <i class="fas fa-plus"></i> 添加知识
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb"></i>
+                                <strong>知识库说明：</strong>
+                                您可以在此"投喂"您的行业专业知识、专业术语、服务标准等内容，AI将基于这些知识为您生成更专业、更个性化的客户互动内容。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if knowledge_records %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th width="50%">知识内容</th>
+                                    <th width="20%">AI反馈</th>
+                                    <th width="20%">创建时间</th>
+                                    <th width="10%">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in knowledge_records %}
+                                <tr>
+                                    <td>
+                                        <div class="knowledge-preview">
+                                            {{ record.content[:200] }}{% if record.content|length > 200 %}...{% endif %}
+                                        </div>
+                                        {% if record.content|length > 200 %}
+                                        <small><a href="#" onclick="toggleKnowledgeContent({{ record.id }})">查看完整内容</a></small>
+                                        <div id="knowledge-full-{{ record.id }}" style="display: none; margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                                            {{ record.content }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.feedback %}
+                                        <span class="badge badge-success">已处理</span>
+                                        <small class="d-block mt-1">{{ record.feedback[:50] }}{% if record.feedback|length > 50 %}...{% endif %}</small>
+                                        {% else %}
+                                        <span class="badge badge-warning">待处理</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editKnowledge({{ record.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-database"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">知识库条目总数</span>
+                                    <span class="info-box-number">{{ knowledge_records|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>暂无知识库内容</strong>
+                        <br>开始添加您的专业知识，让AI更好地为您服务！
+                        <br><br>
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addKnowledgeModal">
+                            <i class="fas fa-plus"></i> 立即添加知识
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addKnowledgeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">添加知识库内容</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addKnowledgeForm">
+                    <div class="form-group">
+                        <label for="knowledgeContent">知识内容 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="knowledgeContent" rows="10" placeholder="请输入您的行业专业知识、专业术语、服务标准等内容...
+
+示例：
+- 茶叶行业专业术语：发酵度、香型分类、冲泡温度标准等
+- 金融行业服务标准：风险评估流程、合规要求、客户分级标准等
+- 教育行业专业知识：课程体系设计、学习效果评估、个性化教学方法"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            提示：详细的知识内容有助于AI生成更准确、更专业的客户互动内容
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addKnowledge()">
+                    <i class="fas fa-save"></i> 添加
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleKnowledgeContent(recordId) {
+    const fullContent = document.getElementById(`knowledge-full-${recordId}`);
+    if (fullContent.style.display === 'none') {
+        fullContent.style.display = 'block';
+    } else {
+        fullContent.style.display = 'none';
+    }
+}
+
+function addKnowledge() {
+    const content = document.getElementById('knowledgeContent').value;
+    if (!content.trim()) {
+        alert('请输入知识内容');
+        return;
+    }
+    
+    const button = event.target;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 添加中...';
+    
+    fetch('/user/add_knowledge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({content: content})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            $('#addKnowledgeModal').modal('hide');
+            showNotification(data.message || '知识库内容添加成功', 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showNotification(data.error || '添加失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('添加失败，请重试', 'error');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-save"></i> 添加';
+    });
+}
+
+function editKnowledge(recordId) {
+    alert('编辑功能即将上线，敬请期待！');
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', notification);
+    
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 3000);
+}
+
+$('#addKnowledgeModal').on('hidden.bs.modal', function () {
+    document.getElementById('knowledgeContent').value = '';
+});
+</script>
+{% endblock %}
