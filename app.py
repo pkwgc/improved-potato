@@ -5922,32 +5922,69 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"加载配置文件失败: {str(e)}")
 
+class CustomerData:
+    """简单的数据类，用于将字典数据转换为对象属性访问"""
+    def __init__(self, data_dict):
+        for key, value in data_dict.items():
+            setattr(self, key, value)
+
 @app.route('/admin/customer-profiling')
 @admin_required
 def admin_customer_profiling():
     db = next(get_db())
     try:
-        total_customers = db.query(User).filter(User.is_admin == False).count()
-        high_value_customers = db.query(User).filter(
-            User.is_admin == False,
-            User.value_level == '高价值'
+        total_customers = db.query(CustomerProfile).count()
+        high_value_customers = db.query(CustomerProfile).filter(
+            CustomerProfile.value_level == '高价值客户'
         ).count()
-        active_customers = db.query(User).filter(
-            User.is_admin == False,
-            User.activity_score >= 60
+        active_customers = db.query(CustomerProfile).filter(
+            CustomerProfile.activity_score >= 0.6
         ).count()
         
-        avg_activity = db.query(func.avg(User.activity_score)).filter(
-            User.is_admin == False
-        ).scalar() or 0
+        avg_activity = db.query(func.avg(CustomerProfile.activity_score)).scalar() or 0
         
-        customers = db.query(User).filter(User.is_admin == False).all()
+        app.logger.info(f"客户画像统计: 总数={total_customers}, 高价值={high_value_customers}, 活跃={active_customers}, 平均活跃度={avg_activity}")
+        
+        customers_query = db.query(
+            CustomerProfile,
+            WechatContact.nickname,
+            WechatContact.wechat_id,
+            WechatContact.remark
+        ).join(
+            WechatContact, CustomerProfile.contact_id == WechatContact.id
+        ).all()
+        
+        customers = []
+        for profile, nickname, wechat_id, remark in customers_query:
+            profile_data = {}
+            tags = []
+            if profile.profile_value:
+                try:
+                    profile_data = json.loads(profile.profile_value)
+                    tags = profile_data.get('labels', [])
+                except json.JSONDecodeError:
+                    pass
+            
+            customer_data = {
+                'id': profile.id,
+                'username': remark or nickname or wechat_id,  # 优先显示备注，然后昵称，最后微信ID
+                'user_id': wechat_id,
+                'value_level': profile.value_level or '潜在用户',
+                'activity_score': int(profile.activity_score * 100) if profile.activity_score else 0,
+                'tags': json.dumps([{'tag': tag} for tag in tags]) if tags else '[]',  # 转换为模板期望的格式
+                'created_at': profile.created_at,
+                'profile_data': profile_data,  # 完整的AI画像数据
+                'confidence': profile.confidence or 0.0,
+                'conversion_rate': profile.confidence or 0.0,  # 使用置信度作为转化率
+                'last_active_time': profile.updated_at  # 使用更新时间作为最后活动时间
+            }
+            customers.append(CustomerData(customer_data))
         
         return render_template('admin_customer_profiling.html',
                              total_customers=total_customers,
                              high_value_customers=high_value_customers,
                              active_customers=active_customers,
-                             avg_activity_score=round(avg_activity, 1),
+                             avg_activity_score=round(avg_activity * 100, 1),
                              customers=customers)
     finally:
         db.close()

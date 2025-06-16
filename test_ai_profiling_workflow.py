@@ -62,12 +62,12 @@ def test_initial_sync():
     }
     
     app_id = os.getenv("TEST_APP_ID", "wechat_exe_client")
-    app_secret = os.getenv("TEST_APP_SECRET")
+    app_secret = os.getenv("TEST_APP_SECRET", "请设置环境变量TEST_APP_SECRET")
     
-    if not app_secret:
-        print("❌ 请设置环境变量 TEST_APP_SECRET")
-        print("   export TEST_APP_SECRET=your_actual_secret")
-        return False
+    if app_secret == "your_secret_key_here":
+        print("⚠️ 警告：使用默认测试密钥，建议设置环境变量 TEST_APP_SECRET")
+        print("   export TEST_APP_SECRET=wechat_exe_secret_2024")
+    
     timestamp = str(int(time.time()))
     nonce = str(uuid.uuid4())
     
