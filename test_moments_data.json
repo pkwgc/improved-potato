@@ -1,0 +1,71 @@
+{
+    "user_id": "test_user_001",
+    "user_wxid": "wxid_test001",
+    "wechat_id": "wxid_friend001",
+    "moments": [
+        {
+            "nickname": "张小美",
+            "title": "今日美食分享",
+            "content": "今天尝试了新开的日料店，味道真的很棒！特别推荐他们家的三文鱼刺身和天妇罗，新鲜度满分！下次还要带朋友一起来～",
+            "likes": ["friend1", "friend2", "friend3"],
+            "comments": [
+                {"user": "friend1", "content": "看起来很好吃，在哪里？"},
+                {"user": "friend2", "content": "我也想去试试！"}
+            ],
+            "clicks": 25,
+            "user_actions": ["like", "comment"],
+            "timestamp": "2024-01-15 18:30:00"
+        },
+        {
+            "nickname": "张小美",
+            "title": "周末杭州游",
+            "content": "周末和闺蜜去了杭州西湖，风景真的太美了！断桥残雪虽然没有雪，但是湖光山色依然让人心旷神怡。还去了河坊街吃了很多小吃，满足！",
+            "likes": ["friend3", "friend4", "friend5"],
+            "comments": [
+                {"user": "friend4", "content": "杭州确实很美，我上次去也很喜欢"},
+                {"user": "friend5", "content": "河坊街的小吃真的很棒"}
+            ],
+            "clicks": 18,
+            "user_actions": ["like"],
+            "timestamp": "2024-01-13 20:15:00"
+        },
+        {
+            "nickname": "张小美",
+            "title": "新买的相机",
+            "content": "终于入手了心仪已久的佳能R5！试拍了几张，画质真的没话说。准备这个周末去公园拍拍花花草草，记录生活中的美好瞬间📸",
+            "likes": ["friend1", "friend6", "friend7"],
+            "comments": [
+                {"user": "friend6", "content": "哇，专业设备！期待你的作品"},
+                {"user": "friend1", "content": "摄影大师诞生了"}
+            ],
+            "clicks": 22,
+            "user_actions": ["like", "comment"],
+            "timestamp": "2024-01-10 16:45:00"
+        },
+        {
+            "nickname": "张小美",
+            "title": "健身打卡",
+            "content": "今天的瑜伽课结束！感觉整个人都放松了很多，压力也释放了不少。坚持运动真的对身心健康很有帮助，大家也要多运动哦💪",
+            "likes": ["friend2", "friend8"],
+            "comments": [
+                {"user": "friend8", "content": "一起加油！我也在坚持健身"}
+            ],
+            "clicks": 12,
+            "user_actions": ["like"],
+            "timestamp": "2024-01-08 19:20:00"
+        },
+        {
+            "nickname": "张小美",
+            "title": "读书分享",
+            "content": "最近在读《人类简史》，作者的观点很有意思，让我对人类文明的发展有了新的认识。推荐给喜欢思考的朋友们📚",
+            "likes": ["friend9", "friend10"],
+            "comments": [
+                {"user": "friend9", "content": "这本书我也想读，谢谢推荐"},
+                {"user": "friend10", "content": "尤瓦尔的书确实很棒"}
+            ],
+            "clicks": 15,
+            "user_actions": ["comment"],
+            "timestamp": "2024-01-05 21:30:00"
+        }
+    ]
+}

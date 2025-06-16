@@ -726,7 +726,7 @@ def chat():
                                 }
                                 socketio.emit('human_handoff_notification',
                                               notification_data,
-                                              room=f"wechat_{agent.agent_wechat_id}")
+                                              to=f"wechat_{agent.agent_wechat_id}")
 
                     db.commit()
                 except Exception as e:
@@ -3158,12 +3158,11 @@ def get_greeting():
             context_data.append({"role": "user", "content": "请给我发一条问候语"})
 
             try:
-                response = ai_service.client.chat.completions.create(
+                response = ai_service.client.chat.create(
                     model=ai_service.model,
                     messages=[{"role": "system", "content": greeting_prompt}] + context_data,
                     temperature=ai_service.temperature,
-                    max_tokens=ai_service.max_tokens,
-                    stream=False
+                    max_tokens=ai_service.max_tokens
                 )
 
                 result = response.model_dump()
@@ -6382,7 +6381,7 @@ def send_message_to_contact_api(contact_id):
                     'target_wechat_id': contact.wechat_id,
                     'content': content,
                     'message_id': message.id
-                }, room=f'user_{user.user_id}')
+                }, to=f'user_{user.user_id}')
                 
                 message.status = 'sent'
                 message.sent_time = datetime.now()
@@ -6654,5 +6653,5 @@ if __name__ == "__main__":
     #import eventlet
     #import eventlet.wsgi
     logger.info("以SocketIO方式启动，支持WebSocket")
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False, log_output=True)
 
