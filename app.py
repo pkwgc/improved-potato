@@ -289,6 +289,8 @@ def initial_sync():
         user_wxid = data.get("user_wxid")
         wechat_id = data.get("wechat_id")
         moments = data.get("moments", [])
+        nickname = data.get("nickname", "")
+        avatar_style = data.get("avatar_style", "")
 
         logger.info(f"开始处理用户 {user_id} 的朋友圈AI画像分析，朋友圈数量: {len(moments)}")
 
@@ -311,94 +313,115 @@ def initial_sync():
                 logger.exception(f"处理朋友圈数据失败: {str(e)}")
                 continue
 
+        has_nickname = nickname and nickname.strip()
+        has_avatar_style = avatar_style and avatar_style.strip()
+        has_moments = all_moments_content and len(all_moments_content) > 0
+        
+        logger.info(f"验证输入参数 - nickname: '{nickname}' (有效: {has_nickname}), avatar_style: '{avatar_style}' (有效: {has_avatar_style}), moments数量: {len(all_moments_content)} (有效: {has_moments})")
+        
+        if not (has_nickname or has_avatar_style or has_moments):
+            logger.info("昵称、头像风格和朋友圈内容均为空，跳过AI画像分析")
+            return jsonify({"error": "分析失败: 所有输入参数均为空"}), 400
+
         profile_result = {"summary": "", "labels": [], "category": "普通客户", "hobbies": []}
 
-        if all_moments_content:
-            try:
-                ai_strategy = db.query(AIStrategy).filter_by(name="朋友圈画像分析").first()
-                if not ai_strategy:
-                    ai_strategy = AIStrategy(
-                        name="朋友圈画像分析",
-                        description="用于分析微信朋友圈内容生成用户画像",
-                        prompt_template="""请分析以下微信朋友圈内容，生成用户画像：
+        try:
+            ai_strategy = db.query(AIStrategy).filter_by(name="朋友圈画像分析").first()
+            if not ai_strategy:
+                ai_strategy = AIStrategy(
+                    name="朋友圈画像分析",
+                    description="用于分析微信朋友圈内容生成用户画像",
+                    prompt_template="""请分析以下微信朋友圈内容，生成用户画像：
+
+用户基本信息：
+{user_info}
 
 朋友圈内容：
 {moments_content}
 
-请根据以上内容分析用户特征，并以JSON格式返回：
+请根据用户昵称、头像风格和朋友圈内容综合分析用户特征，并以JSON格式返回：
 {{
   "summary": "用户画像摘要描述",
   "labels": ["标签1", "标签2", "标签3"],
   "category": "客户分组归类（高价值客户/中价值客户/普通客户/潜力客户）",
   "hobbies": ["兴趣爱好1", "兴趣爱好2", "兴趣爱好3"]
 }}""",
-                        system_message="你是专业的用户画像分析师，请根据用户的朋友圈内容分析其特征和兴趣。",
-                        temperature=0.7,
-                        max_tokens=2000
-                    )
-                    db.add(ai_strategy)
-
-                moments_text = json.dumps(all_moments_content, ensure_ascii=False, indent=2)
-                prompt = ai_strategy.prompt_template.format(moments_content=moments_text)
-
-                from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL
-                import requests
-
-                response = requests.post(
-                    f"{DEEPSEEK_BASE_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": MODEL,
-                        "messages": [
-                            {"role": "system", "content": ai_strategy.system_message},
-                            {"role": "user", "content": prompt}
-                        ],
-                        "temperature": ai_strategy.temperature,
-                        "max_tokens": ai_strategy.max_tokens
-                    },
-                    timeout=30
+                    system_message="你是专业的用户画像分析师，请根据用户的朋友圈内容分析其特征和兴趣。",
+                    temperature=0.7,
+                    max_tokens=2000
                 )
+                db.add(ai_strategy)
 
-                if response.status_code == 200:
-                    ai_result = response.json()
-                    if "choices" in ai_result and ai_result["choices"]:
-                        content = ai_result["choices"][0]["message"]["content"]
-                        try:
-                            import re
-                            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-                            if json_match:
-                                profile_data = json.loads(json_match.group())
-                                # 字段完整性校验
-                                required_fields = ["summary", "labels", "category", "hobbies"]
-                                if all(field in profile_data for field in required_fields):
-                                    profile_result = {
-                                        "summary": profile_data.get("summary", ""),
-                                        "labels": profile_data.get("labels", []),
-                                        "category": profile_data.get("category", "普通客户"),
-                                        "hobbies": profile_data.get("hobbies", [])
-                                    }
-                                else:
-                                    logger.error("AI返回内容缺少必要字段")
-                        except json.JSONDecodeError as je:
-                            logger.exception("AI返回内容无法解析为JSON")
+            user_info_parts = []
+            if nickname:
+                user_info_parts.append(f"- 昵称：{nickname}")
+            if avatar_style:
+                user_info_parts.append(f"- 头像风格：{avatar_style}")
 
-            except requests.exceptions.RequestException as re:
-                logger.exception(f"AI画像分析网络请求失败: {str(re)}")
-            except Exception as ai_error:
-                logger.exception(f"AI画像分析失败: {str(ai_error)}")
+            prompt = ai_strategy.prompt_template.format(
+                user_info='\n'.join(user_info_parts) if user_info_parts else "无可用基本信息",
+                moments_content=json.dumps(all_moments_content, ensure_ascii=False, indent=2) if all_moments_content else "未提供"
+            )
+
+            from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL
+            import requests
+
+            response = requests.post(
+                f"{DEEPSEEK_BASE_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": MODEL,
+                    "messages": [
+                        {"role": "system", "content": ai_strategy.system_message},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": ai_strategy.temperature,
+                    "max_tokens": ai_strategy.max_tokens
+                },
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                ai_result = response.json()
+                if "choices" in ai_result and ai_result["choices"]:
+                    content = ai_result["choices"][0]["message"]["content"]
+                    try:
+                        import re
+                        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                        if json_match:
+                            profile_data = json.loads(json_match.group())
+                            required_fields = ["summary", "labels", "category", "hobbies"]
+                            if all(field in profile_data for field in required_fields):
+                                profile_result = {
+                                    "summary": profile_data.get("summary", ""),
+                                    "labels": profile_data.get("labels", []),
+                                    "category": profile_data.get("category", "普通客户"),
+                                    "hobbies": profile_data.get("hobbies", [])
+                                }
+                            else:
+                                logger.error("AI返回内容缺少必要字段")
+                    except json.JSONDecodeError as je:
+                        logger.exception("AI返回内容无法解析为JSON")
+
+        except requests.exceptions.RequestException as re:
+            logger.exception(f"AI画像分析网络请求失败: {str(re)}")
+        except Exception as ai_error:
+            logger.exception(f"AI画像分析失败: {str(ai_error)}")
 
         contact = db.query(WechatContact).filter_by(wechat_id=wechat_id).first()
         if not contact:
             contact = WechatContact(
                 owner_id=1,
                 wechat_id=wechat_id,
-                nickname=wechat_id,
+                nickname=nickname or wechat_id,
                 created_at=datetime.utcnow()
             )
             db.add(contact)
+        elif nickname:
+            contact.nickname = nickname
 
         customer_profile = db.query(CustomerProfile).filter_by(contact_id=contact.id).first()
         profile_value = json.dumps(profile_result, ensure_ascii=False)
@@ -7922,7 +7945,7 @@ if __name__ == '__main__':
     #import eventlet
     #import eventlet.wsgi
     logger.info("以SocketIO方式启动，支持WebSocket")
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False, log_output=True,
+    socketio.run(app, host="0.0.0.0", port=5001, debug=True, use_reloader=False, log_output=True,
                  allow_unsafe_werkzeug=True)
 
 
