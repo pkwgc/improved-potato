@@ -289,8 +289,6 @@ def initial_sync():
         user_wxid = data.get("user_wxid")
         wechat_id = data.get("wechat_id")
         moments = data.get("moments", [])
-        nickname = data.get("nickname", "")
-        avatar_style = data.get("avatar_style", "")
 
         logger.info(f"开始处理用户 {user_id} 的朋友圈AI画像分析，朋友圈数量: {len(moments)}")
 
@@ -324,14 +322,10 @@ def initial_sync():
                         description="用于分析微信朋友圈内容生成用户画像",
                         prompt_template="""请分析以下微信朋友圈内容，生成用户画像：
 
-用户基本信息：
-- 昵称：{nickname}
-- 头像风格：{avatar_style}
-
 朋友圈内容：
 {moments_content}
 
-请根据用户昵称、头像风格和朋友圈内容综合分析用户特征，并以JSON格式返回：
+请根据以上内容分析用户特征，并以JSON格式返回：
 {{
   "summary": "用户画像摘要描述",
   "labels": ["标签1", "标签2", "标签3"],
@@ -345,11 +339,7 @@ def initial_sync():
                     db.add(ai_strategy)
 
                 moments_text = json.dumps(all_moments_content, ensure_ascii=False, indent=2)
-                prompt = ai_strategy.prompt_template.format(
-                    nickname=nickname or "未提供",
-                    avatar_style=avatar_style or "未提供",
-                    moments_content=moments_text
-                )
+                prompt = ai_strategy.prompt_template.format(moments_content=moments_text)
 
                 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL
                 import requests
@@ -405,12 +395,10 @@ def initial_sync():
             contact = WechatContact(
                 owner_id=1,
                 wechat_id=wechat_id,
-                nickname=nickname or wechat_id,
+                nickname=wechat_id,
                 created_at=datetime.utcnow()
             )
             db.add(contact)
-        elif nickname:
-            contact.nickname = nickname
 
         customer_profile = db.query(CustomerProfile).filter_by(contact_id=contact.id).first()
         profile_value = json.dumps(profile_result, ensure_ascii=False)
