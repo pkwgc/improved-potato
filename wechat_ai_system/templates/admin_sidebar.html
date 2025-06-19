@@ -1,0 +1,63 @@
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> 首页
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_users') %}active{% endif %}" href="{{ url_for('admin_users') }}">
+                                <i class="bi bi-people"></i> 用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_templates') %}active{% endif %}" href="{{ url_for('admin_templates') }}">
+                                <i class="bi bi-file-earmark-text"></i> 模板管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_token_packages') %}active{% endif %}" href="{{ url_for('admin_token_packages') }}">
+                                <i class="bi bi-credit-card"></i> 套餐管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_billing') %}active{% endif %}" href="{{ url_for('admin_billing') }}">
+                                <i class="bi bi-credit-card"></i> 计费管理
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_chat_history') %}active{% endif %}" href="{{ url_for('admin_chat_history') }}">
+                                <i class="bi bi-chat-dots"></i> 聊天记录
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_personalized_prompt') %}active{% endif %}" href="{{ url_for('admin_personalized_prompt') }}">
+                                <i class="bi bi-magic"></i> 个性化提示词
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_ai_profiling') %}active{% endif %}" href="{{ url_for('admin_ai_profiling') }}">
+                                <i class="bi bi-person-badge"></i> 朋友圈AI画像
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_settings') %}active{% endif %}" href="{{ url_for('admin_settings') }}">
+                                <i class="bi bi-gear"></i> 系统设置
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_inventory') %}active{% endif %}" href="{{ url_for('admin_inventory') }}">
+                                <i class="bi bi-box-seam"></i> 用户库存管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_order_management') %}active{% endif %}" href="{{ url_for('admin_order_management') }}">
+                                <i class="bi bi-cart"></i> 订单管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_sales_statistics') %}active{% endif %}" href="{{ url_for('admin_sales_statistics') }}">
+                                <i class="bi bi-graph-up"></i> 销售统计
+                            </a>
+                        </li>
+                    </ul>

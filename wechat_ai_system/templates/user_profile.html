@@ -1,0 +1,184 @@
+{% extends "user_base.html" %}
+
+{% block title %}个人资料 - AI商业化系统{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .profile-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .profile-header {
+        background-color: #4a6baf;
+        color: white;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+    }
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #fff;
+        color: #4a6baf;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin-bottom: 15px;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">个人资料</h1>
+                </div>
+                
+                {% if message %}
+                <div class="alert alert-{{ message_type }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card profile-card mb-4">
+                            <div class="profile-header">
+                                <div class="profile-avatar mx-auto">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                <h4 class="text-center">{{ user.username }}</h4>
+                                <p class="text-center mb-0">用户ID: {{ user.user_id }}</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Token余额:</span>
+                                    <span><strong>{{ user.token_balance }}</strong></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>当前套餐:</span>
+                                    <span><strong>{{ user.token_package or '无' }}</strong></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>注册时间:</span>
+                                    <span><strong>{{ user.created_at.strftime('%Y-%m-%d') }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-upload"></i> 上传库存和产品</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ url_for('user_upload_inventory') }}" method="post" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label for="inventoryFile" class="form-label">选择库存文件</label>
+                                        <input class="form-control" type="file" id="inventoryFile" name="inventory_file">
+                                        <small class="text-muted">支持Excel或CSV格式</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">上传</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-person-lines-fill"></i> 个人信息</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ url_for('update_user_profile') }}" method="post">
+                                    <div class="mb-3">
+                                        <label for="identity" class="form-label">身份信息</label>
+                                        <input type="text" class="form-control" id="identity" name="identity" value="{{ user.identity or '' }}">
+                                        <small class="text-muted">例如：学生、工程师、医生等</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="hobbies" class="form-label">兴趣爱好</label>
+                                        <input type="text" class="form-control" id="hobbies" name="hobbies" value="{{ user.hobbies or '' }}">
+                                        <small class="text-muted">例如：阅读、旅游、摄影等</small>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">其他信息</h5>
+                                    
+                                    {% for key, value in profile_data.items() %}
+                                    <div class="mb-3">
+                                        <label for="{{ key }}" class="form-label">{{ key }}</label>
+                                        <input type="text" class="form-control" id="{{ key }}" name="profile_{{ key }}" value="{{ value }}">
+                                    </div>
+                                    {% endfor %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="newField" class="form-label">添加新字段</label>
+                                        <div class="input-group mb-3">
+                                            <input type="text" class="form-control" placeholder="字段名称" id="newFieldName" name="new_field_name">
+                                            <input type="text" class="form-control" placeholder="字段值" id="newFieldValue" name="new_field_value">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="addNewField()">添加</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="newFields"></div>
+                                    
+                                    <button type="submit" class="btn btn-primary">保存信息</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-robot"></i> AI投喂</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ url_for('user_ai_feeding') }}" method="post">
+                                    <div class="mb-3">
+                                        <label for="feedingContent" class="form-label">投喂内容</label>
+                                        <textarea class="form-control" id="feedingContent" name="feeding_content" rows="3" placeholder="输入您想要投喂给AI的内容..."></textarea>
+                                        <small class="text-muted">投喂内容将用于优化AI对您的回复</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">投喂</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+        function addNewField() {
+            const fieldName = document.getElementById('newFieldName').value.trim();
+            const fieldValue = document.getElementById('newFieldValue').value.trim();
+            
+            if (fieldName && fieldValue) {
+                const newFieldsDiv = document.getElementById('newFields');
+                
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'mb-3';
+                
+                const label = document.createElement('label');
+                label.className = 'form-label';
+                label.textContent = fieldName;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control';
+                input.name = 'profile_' + fieldName;
+                input.value = fieldValue;
+                
+                fieldDiv.appendChild(label);
+                fieldDiv.appendChild(input);
+                
+                newFieldsDiv.appendChild(fieldDiv);
+                
+                // 清空输入框
+                document.getElementById('newFieldName').value = '';
+                document.getElementById('newFieldValue').value = '';
+            }
+        }
+    </script>
+{% endblock %}

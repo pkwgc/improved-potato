@@ -1,0 +1,89 @@
+{% extends "user_base.html" %}
+
+{% block title %}套餐购买 - AI商业化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="bi bi-box"></i> 套餐购买</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">
+                            当前余额: {{ user.token_balance }} Tokens
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {% if message %}
+            <div class="alert alert-{{ message_type }}">{{ message }}</div>
+            {% endif %}
+
+            <div class="row mt-4">
+                {% if packages %}
+                    {% for package in packages %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card package-card {% if package.price < 100 %}basic-package{% elif package.price < 300 %}standard-package{% else %}premium-package{% endif %}">
+                            <div class="package-header text-center">
+                                <h3>{{ package.name }}</h3>
+                                <div class="package-price">¥{{ package.price }}</div>
+                                <div class="package-tokens">{{ package.token_amount }} Tokens</div>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush mb-3">
+                                    <li class="list-group-item">有效期: {{ package.validity_days }} 天</li>
+                                    <li class="list-group-item">{{ package.description or '标准AI对话服务' }}</li>
+                                </ul>
+                                <div class="d-grid">
+                                    <a href="{{ url_for('user_assign_package', package_id=package.id) }}" class="btn btn-primary">立即购买</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12 text-center py-5">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i> 暂无可用套餐，请联系管理员添加套餐
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+    .package-card {
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .package-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .package-header {
+        padding: 20px;
+        color: white;
+    }
+    .package-price {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    .package-tokens {
+        font-size: 1.2rem;
+    }
+    .basic-package .package-header {
+        background: linear-gradient(135deg, #3f87a6, #4a6baf);
+    }
+    .standard-package .package-header {
+        background: linear-gradient(135deg, #4a6baf, #5a4a9f);
+    }
+    .premium-package .package-header {
+        background: linear-gradient(135deg, #5a4a9f, #7a2c9f);
+    }
+</style>
+{% endblock %}

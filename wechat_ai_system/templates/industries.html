@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>行业管理 - 管理后台</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f8f9fa; }
+    .sidebar {
+      position: fixed; top: 0; bottom: 0; left: 0;
+      z-index: 100;
+      padding: 48px 0 0;
+      background-color: #343a40;
+    }
+    .sidebar-sticky {
+      height: calc(100vh - 48px);
+      padding-top: .5rem;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .sidebar .nav-link {
+      color: #ced4da;
+      padding: 0.75rem 1rem;
+    }
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      color: #fff;
+      background-color: rgba(255,255,255,0.1);
+    }
+    .main-content { padding: 20px; margin-left: 240px; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">AI商业化系统</a>
+  <div class="navbar-nav">
+    <div class="nav-item text-nowrap">
+      <a class="nav-link px-3" href="{{ url_for('admin_logout') }}">退出登录</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+    <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+      <div class="sidebar-sticky">
+	  				{% set is_admin = True %}
+                {% include 'sidebar.html' %}
+      </div>
+    </nav>
+
+    <main class="main-content col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">行业管理</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+          <i class="bi bi-plus"></i> 添加行业
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>行业名称</th>
+                <th>描述</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for industry in industries %}
+              <tr>
+                <td>{{ industry.id }}</td>
+                <td>{{ industry.name }}</td>
+                <td>{{ industry.description }}</td>
+                <td>{{ industry.created_at.strftime('%Y-%m-%d %H:%M') if industry.created_at else '未知' }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" onclick="openEditModal('{{ industry.id }}', '{{ industry.name }}', '{{ industry.description }}')">
+                    <i class="bi bi-pencil"></i> 编辑
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ industry.id }}', '{{ industry.name }}')">
+                    <i class="bi bi-trash"></i> 删除
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <form id="deleteForm" action="{{ url_for('admin_industries') }}" method="post">
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" id="delete_id" name="id">
+      </form>
+
+      <!-- 添加行业模态框 -->
+      <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form action="{{ url_for('admin_industries') }}" method="post">
+              <div class="modal-header">
+                <h5 class="modal-title">添加行业</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <input type="hidden" name="action" value="add">
+                <div class="mb-3">
+                  <label class="form-label">行业名称</label>
+                  <input type="text" class="form-control" name="name" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">行业描述</label>
+                  <textarea class="form-control" name="description"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 编辑行业模态框 -->
+      <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form action="{{ url_for('admin_industries') }}" method="post">
+              <div class="modal-header">
+                <h5 class="modal-title">编辑行业</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="mb-3">
+                  <label class="form-label">行业名称</label>
+                  <input type="text" class="form-control" name="name" id="edit_name" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">行业描述</label>
+                  <textarea class="form-control" name="description" id="edit_description"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function openEditModal(id, name, desc) {
+  document.getElementById('edit_id').value = id;
+  document.getElementById('edit_name').value = name;
+  document.getElementById('edit_description').value = desc;
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+function confirmDelete(id, name) {
+  if (confirm(`确认删除行业“${name}”？`)) {
+    document.getElementById('delete_id').value = id;
+    document.getElementById('deleteForm').submit();
+  }
+}
+</script>
+</body>
+</html>

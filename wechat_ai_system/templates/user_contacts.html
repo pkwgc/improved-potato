@@ -1,0 +1,1109 @@
+{% extends "user_base.html" %}
+
+{% block title %}微信管理{% endblock %}
+
+{% block content %}
+<style>
+    /* 全局样式 */
+    body {
+        background-color: #f5f6fa;
+    }
+    
+    .main-container {
+        height: calc(100vh - 120px);
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    /* 滚动条美化 */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    /* 左侧账号列表样式 */
+    .account-sidebar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        height: 100%;
+        overflow-y: auto;
+    }
+    
+    .account-header {
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .account-item {
+        padding: 15px 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        background: transparent;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .account-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(5px);
+    }
+    
+    .account-item.active {
+        background: rgba(255, 255, 255, 0.2);
+        border-left: 4px solid #fff;
+    }
+    
+    /* 中间联系人列表样式 */
+    .contacts-section {
+        background: #f8f9fa;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .current-account-info {
+        background: white;
+        padding: 20px;
+        border-bottom: 1px solid #e9ecef;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 标签页样式 */
+    .custom-tabs {
+        background: white;
+        padding: 10px 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .custom-tabs .nav-link {
+        color: #6c757d;
+        border: none;
+        background: transparent;
+        padding: 8px 20px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .custom-tabs .nav-link:hover {
+        background: #f1f3f5;
+        color: #495057;
+    }
+    
+    .custom-tabs .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* 搜索框样式 */
+    .search-container {
+        padding: 15px 20px;
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .search-input {
+        background: #f1f3f5;
+        border: none;
+        border-radius: 25px;
+        padding: 10px 20px 10px 45px;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 35px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    
+    /* 联系人列表样式 */
+    .contacts-list {
+        flex: 1;
+        overflow-y: auto;
+        background: white;
+    }
+    
+    .contacts-scroll-container {
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
+    .contact-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f1f3f5;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .contact-item:hover {
+        background: #f8f9fa;
+        transform: translateX(5px);
+    }
+    
+    .contact-item.active {
+        background: linear-gradient(to right, #f5f7ff 0%, #ffffff 100%);
+        border-left: 3px solid #667eea;
+    }
+    
+    /* 联系人信息样式 */
+    .contact-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .contact-name {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .contact-last-msg {
+        font-size: 0.85rem;
+        color: #999;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .contact-time {
+        font-size: 0.75rem;
+        color: #adb5bd;
+        white-space: nowrap;
+    }
+    
+    .contact-badge {
+        background: #667eea;
+        color: white;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 8px;
+    }
+    
+    /* 头像样式 */
+    .avatar-container {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .avatar-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .avatar-placeholder {
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    /* 消息区域样式 */
+	.message-section {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    position: relative;
+}
+    
+    
+	.chat-header {
+    /* 头部高度固定，不需要改动 */
+    background: white;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+    
+   
+   .messages-container {
+    /* * 这是核心改动：
+     * 使用 calc() 精确计算高度。
+     * 100% 指的是父容器 .message-section 的完整高度。
+     * 81px 是 .chat-header 的大致高度 (padding 40px + line-height ~41px)。
+     * 105px 是 .input-section 的大致高度 (padding 40px + textarea + buttons)。
+     * 您可能需要根据实际情况微调这两个数值。
+    */
+    height: calc(100% - 81px - 105px);
+    overflow-y: auto;        /* 内容超出时滚动 */
+    padding: 20px;
+    background: #f5f6fa;
+}
+    
+    /* 消息样式 */
+    .message {
+        margin-bottom: 20px;
+        display: flex;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .message-sent {
+        justify-content: flex-end;
+    }
+    
+    .message-received {
+        justify-content: flex-start;
+    }
+    
+    .message-content {
+        max-width: 65%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        position: relative;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .message-sent .message-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message-received .message-content {
+        background: white;
+        color: #333;
+        border-bottom-left-radius: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        margin-top: 5px;
+        opacity: 0.7;
+    }
+    
+    .message-sent .message-time {
+        color: rgba(255, 255, 255, 0.8);
+        text-align: right;
+    }
+    
+    .message-received .message-time {
+        color: #999;
+    }
+    
+    /* 输入区域样式 - 固定在底部 */
+	.input-section {
+    /* 输入区域高度固定，不需要改动 */
+    background: white;
+    border-top: 1px solid #e9ecef;
+    padding: 20px;
+    flex-shrink: 0;
+}
+    
+    .message-input-container {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+    }
+    
+    .message-input {
+        flex: 1;
+        border: 1px solid #e9ecef;
+        border-radius: 25px;
+        padding: 12px 20px;
+        resize: none;
+        max-height: 120px;
+        transition: all 0.3s ease;
+    }
+    
+    .message-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .send-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .send-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .send-button:active {
+        transform: scale(0.95);
+    }
+    
+    /* 工具按钮样式 */
+    .tool-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .tool-button {
+        background: #f1f3f5;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .tool-button:hover {
+        background: #e9ecef;
+        color: #495057;
+        transform: translateY(-2px);
+    }
+    
+    /* AI开关样式 */
+    .ai-switch {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .custom-switch {
+        position: relative;
+        width: 48px;
+        height: 24px;
+    }
+    
+    .custom-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .switch-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+    
+    .switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .switch-slider {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    input:checked + .switch-slider:before {
+        transform: translateX(24px);
+    }
+    
+    /* 空状态样式 */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #adb5bd;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    
+    .empty-state p {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    /* 加载动画 */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* 刷新按钮样式 */
+    .refresh-button {
+        background: rgba(102, 126, 234, 0.1);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #667eea;
+    }
+    
+    .refresh-button:hover {
+        background: rgba(102, 126, 234, 0.2);
+        transform: rotate(180deg);
+    }
+    
+	/* 表情面板样式 */
+    .emoji-panel {
+        position: absolute;
+        bottom: 70px;
+        right: 20px;
+        width: 300px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: none;
+        z-index: 9999;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .emoji-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .emoji-item {
+        font-size: 20px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        user-select: none;
+    }
+
+    .emoji-item:hover {
+        transform: scale(1.2);
+    }
+    
+    /* --- 新增：H5手机端响应式设计 --- */
+    .mobile-back-button {
+        display: none; /* 默认在PC端隐藏 */
+    }
+
+    @media (max-width: 768px) {
+        .account-sidebar {
+            display: none; /* 在手机端隐藏左侧账号列表 */
+        }
+        
+        .col-md-3, .col-md-4, .col-md-5 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            height: 100%;
+        }
+
+        .main-container, .container-fluid {
+            height: 100vh;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .row.h-100 {
+            height: 100% !important;
+        }
+        
+        /* 手机端视图切换逻辑 */
+        .mobile-hidden {
+            display: none !important;
+        }
+        
+        /* 显示返回按钮 */
+        .mobile-back-button {
+            display: block;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #333;
+            margin-right: 15px;
+            text-decoration: none;
+        }
+
+        /* 调整聊天头部的AI开关 */
+        .ai-switch {
+            font-size: 0.8rem;
+        }
+    }
+
+</style>
+
+<div class="container-fluid py-4">
+    <div class="main-container">
+        <div class="row h-100 g-0">
+            <div class="col-md-3 account-sidebar">
+                <div class="account-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-wechat me-2"></i>微信账号
+                    </h5>
+                </div>
+                <div id="wechatAccountsList">
+                    <div class="empty-state p-5">
+                        <div class="loading-spinner"></div>
+                        <p class="mt-3">加载账号中...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 contacts-section">
+                <div class="current-account-info">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-container me-3" id="currentAccountAvatar">
+                            <div class="avatar-placeholder">
+                                <i class="bi bi-person"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0" id="currentAccountName">未选择账号</h6>
+                            <small class="text-muted" id="currentAccountId"></small>
+                        </div>
+                        <button class="refresh-button" id="refreshContactsBtn">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="custom-tabs">
+                    <ul class="nav nav-pills nav-fill">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="allContactsTab" data-bs-toggle="pill" href="#allContacts">全部</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="friendsTab" data-bs-toggle="pill" href="#friends">通讯录</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="groupsTab" data-bs-toggle="pill" href="#groups">群聊</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="search-container">
+                    <div class="position-relative">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" class="search-input" placeholder="搜索联系人..." id="searchContactInput">
+                    </div>
+                </div>
+                
+                <div class="tab-content contacts-list">
+                    <div class="tab-pane fade show active" id="allContacts">
+                        <div id="contactsList" class="contacts-scroll-container">
+                            <div class="empty-state">
+                                <i class="bi bi-people"></i>
+                                <p>选择微信账号查看联系人</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="friends">
+                        <div id="friendsList" class="contacts-scroll-container">
+                            <div class="empty-state">
+                                <i class="bi bi-person"></i>
+                                <p>选择微信账号查看好友</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="groups">
+                        <div id="groupsList" class="contacts-scroll-container">
+                            <div class="empty-state">
+                                <i class="bi bi-people-fill"></i>
+                                <p>选择微信账号查看群组</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-5 h-100 d-flex flex-column">
+                <div class="empty-state flex-grow-1" id="emptyMessageContainer">
+                    <i class="bi bi-chat-dots"></i>
+                    <p>选择一个联系人开始聊天</p>
+                </div>
+                
+                <div class="message-section d-none" id="messageContainer">
+                    <div class="chat-header">
+                        <div class="d-flex align-items-center">
+                            <a href="#" class="mobile-back-button" id="backToContactsBtn"><i class="bi bi-arrow-left"></i></a>
+                            <div class="avatar-container me-3" id="contactAvatar">
+                                <div class="avatar-placeholder">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-0" id="contactName">联系人名称</h5>
+                                <p class="text-muted mb-0 small" id="contactWechatId">微信ID</p>
+                                <input type="hidden" id="contactId">
+                                <input type="hidden" id="aiContactId">
+                            </div>
+                            <div class="ai-switch">
+                                <span class="text-muted">AI回复</span>
+                                <label class="custom-switch">
+                                    <input type="checkbox" id="chatAiReplyToggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="messages-container" id="messagesContainer">
+                        <div class="empty-state">
+                            <div class="loading-spinner"></div>
+                            <p class="mt-3">加载消息中...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="input-section">
+                        <form id="messageForm">
+                            <div class="message-input-container">
+                                <textarea class="message-input" id="messageInput" rows="1" placeholder="输入消息..."></textarea>
+                                <button class="send-button" type="submit">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </div>
+                            <div class="tool-buttons">
+                                <button type="button" class="tool-button" id="uploadImageBtn">
+                                    <i class="bi bi-image me-1"></i> 图片
+                                </button>
+                                <button type="button" class="tool-button" id="uploadFileBtn">
+                                    <i class="bi bi-file-earmark me-1"></i> 文件
+                                </button>
+                                <button type="button" class="tool-button" id="emojiBtn">
+                                    <i class="bi bi-emoji-smile me-1"></i> 表情
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="p-4 d-none" id="contactSettingsContainer">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="emojiPanel" class="emoji-panel shadow-sm">
+    <div class="emoji-row"></div>
+</div>
+
+<div class="modal fade" id="addKeywordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加关键词</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addKeywordForm">
+                    <input type="hidden" id="keywordContactId">
+                    <div class="mb-3">
+                        <label class="form-label">关键词</label>
+                        <input type="text" class="form-control" id="keywordText" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">替换为</label>
+                        <input type="text" class="form-control" id="keywordReplacement">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveKeywordBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editKeywordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑关键词</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editKeywordForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="hidden" id="editKeywordId">
+                            <label class="form-label">关键词</label>
+                            <input type="text" class="form-control" id="editKeywordText" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">替换为</label>
+                            <input type="text" class="form-control" id="editKeywordReplacement">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="updateKeywordBtn">更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteKeywordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="deleteKeywordForm">
+                    <input type="hidden" id="deleteKeywordId">
+                    <p>确定要删除这个关键词吗？</p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteKeywordBtn">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.userId = "{{ user.user_id }}";
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const globalIndicator = document.getElementById('globalUnreadIndicator');
+        if (globalIndicator) {
+            globalIndicator.style.display = 'none';
+        }
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('from') === 'unread') {
+            console.log('从未读消息跳转而来，准备高亮未读联系人');
+            setTimeout(function() {
+                const unreadContact = document.querySelector('.contact-item .badge.bg-danger');
+                if (unreadContact) {
+                    const contactItem = unreadContact.closest('.contact-item');
+                    if (contactItem) {
+                        contactItem.click();
+                        contactItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }, 1000);
+        }
+
+        // --- 新增：H5视图管理 ---
+        const contactsSection = document.querySelector('.contacts-section');
+        const messageColumn = document.querySelector('.col-md-5.h-100'); // 这是消息界面的父级列
+        const backToContactsBtn = document.getElementById('backToContactsBtn');
+
+        function setupMobileView() {
+            if (window.innerWidth <= 768) {
+                // 默认隐藏消息界面，显示联系人列表
+                messageColumn.classList.add('mobile-hidden');
+                contactsSection.classList.remove('mobile-hidden');
+            } else {
+                // 在大屏幕上恢复正常显示
+                messageColumn.classList.remove('mobile-hidden');
+                contactsSection.classList.remove('mobile-hidden');
+            }
+        }
+
+        // 页面加载时设置
+        setupMobileView();
+        
+        // 窗口大小改变时重新设置
+        window.addEventListener('resize', setupMobileView);
+
+        // 返回按钮事件
+        if (backToContactsBtn) {
+            backToContactsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (window.innerWidth <= 768) {
+                    messageColumn.classList.add('mobile-hidden');
+                    contactsSection.classList.remove('mobile-hidden');
+                }
+            });
+        }
+        // --- H5视图管理结束 ---
+    });
+</script>
+<script src="/static/js/contacts.js"></script>
+
+<audio id="notificationSound" preload="auto">
+    <source src="/static/audio/notification.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    // 覆盖原有的 renderContacts 函数，去除分页
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            // 保存原始的 renderContacts 函数引用
+            const originalRenderContacts = window.renderContacts;
+            
+            // 重写 renderContacts 函数，去除分页参数
+            window.renderContacts = function(contactsList, page, pageSize) {
+                // 按时间排序
+                contactsList.sort((a, b) => {
+                    const ta = a.last_message_time || a.last_sync_time || 0;
+                    const tb = b.last_message_time || b.last_sync_time || 0;
+                    return new Date(tb) - new Date(ta);
+                });
+                
+                const contactsContainer = document.getElementById('contactsList');
+                const friendsList = document.getElementById('friendsList');
+                const groupsList = document.getElementById('groupsList');
+                
+                if (contactsList.length === 0) {
+                    const emptyHtml = `
+                        <div class="empty-state">
+                            <i class="bi bi-people"></i>
+                            <p>暂无联系人</p>
+                        </div>
+                    `;
+                    contactsContainer.innerHTML = emptyHtml;
+                    if (friendsList) friendsList.innerHTML = emptyHtml;
+                    if (groupsList) groupsList.innerHTML = emptyHtml;
+                    
+                    // 移除分页
+                    const oldPagination = document.getElementById('contactsPagination');
+                    if (oldPagination) oldPagination.remove();
+                    return;
+                }
+                
+                // 清空所有列表
+                contactsContainer.innerHTML = '';
+                if (friendsList) friendsList.innerHTML = '';
+                if (groupsList) groupsList.innerHTML = '';
+                
+                // 渲染所有联系人，不分页
+                contactsList.forEach(contact => {
+                    const showName = contact.remark || contact.nickname || contact.wechat_id;
+                    const avatarHtml = contact.avatar
+                        ? `<img src="${contact.avatar}" alt="${showName}" onerror="this.parentElement.innerHTML='<div class=\\'avatar-placeholder\\'><i class=\\'bi bi-${contact.is_group ? 'people' : 'person\\'}'></i></div>'">`
+                        : `<div class="avatar-placeholder"><i class="bi bi-${contact.is_group ? 'people' : 'person'}"></i></div>`;
+                    
+                    const lastMessage = contact.last_message || '';
+                    const lastMessageTime = contact.last_message_time ? formatTime(contact.last_message_time) : formatTime(contact.last_sync_time);
+                    const unreadBadge = contact.unread_count > 0 
+                        ? `<span class="badge bg-danger rounded-pill ms-2">${contact.unread_count}</span>` 
+                        : '';
+                    
+                    const contactHtml = `
+                        <div class="contact-item" data-id="${contact.id}" data-wechat-id="${contact.wechat_id}">
+                            <div class="avatar-container">
+                                ${avatarHtml}
+                            </div>
+                            <div class="contact-info">
+                                <div class="contact-name">${showName}${unreadBadge}</div>
+                                <div class="contact-last-msg">${lastMessage}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="contact-time">${lastMessageTime}</div>
+                                <span class="badge ${contact.is_group ? 'bg-info' : 'bg-primary'}">${contact.is_group ? '群聊' : '好友'}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 创建DOM元素
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = contactHtml;
+                    const contactElement = tempDiv.firstElementChild;
+                    
+                    // 绑定点击事件
+                    contactElement.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // 移除其他活跃状态
+                        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        // 设置当前联系人
+                        currentContactId = contact.wechat_id;
+                        window.currentContactDbId = contact.id;
+                        
+                        // 清除未读
+                        if (contact.unread_count && contact.unread_count > 0) {
+                            contact.unread_count = 0;
+                            renderContacts(contacts, 1, 10);
+                        }
+                        
+                        // 显示消息界面
+                        const messageContainer = document.getElementById('messageContainer');
+                        const contactSettingsContainer = document.getElementById('contactSettingsContainer');
+                        const emptyMessageContainer = document.getElementById('emptyMessageContainer');
+                        
+                        if (messageContainer) messageContainer.classList.remove('d-none');
+                        if (contactSettingsContainer) contactSettingsContainer.classList.add('d-none');
+                        if (emptyMessageContainer) emptyMessageContainer.classList.add('d-none');
+                        
+                        // --- 新增：H5视图切换 ---
+                        if (window.innerWidth <= 768) {
+                            document.querySelector('.contacts-section').classList.add('mobile-hidden');
+                            document.querySelector('.col-md-5.h-100').classList.remove('mobile-hidden');
+                        }
+                        // --- H5视图切换结束 ---
+                        
+                        // 更新联系人信息
+                        document.getElementById('contactName').textContent = showName;
+                        document.getElementById('contactWechatId').textContent = contact.wechat_id;
+                        document.getElementById('contactId').value = contact.wechat_id;
+                        document.getElementById('aiContactId').value = contact.id;
+                        
+                        // 更新头像
+                        const avatarContainer = document.getElementById('contactAvatar');
+                        if (avatarContainer) {
+                            avatarContainer.innerHTML = contact.avatar
+                                ? `<img src="${contact.avatar}" alt="${showName}">`
+                                : `<div class="avatar-placeholder"><i class="bi bi-${contact.is_group ? 'people' : 'person'}"></i></div>`;
+                        }
+                        
+                        // 加载消息和更新设置
+                        loadMessages(contact.id);
+                        updateContactSettings(contact);
+                        syncAiReplyInputStatus();
+                    });
+                    
+                    // 添加到对应列表
+                    contactsContainer.appendChild(contactElement);
+                    
+                    // 根据类型添加到好友或群组列表
+                    if (friendsList && !contact.is_group) {
+                        friendsList.appendChild(contactElement.cloneNode(true));
+                    }
+                    if (groupsList && contact.is_group) {
+                        groupsList.appendChild(contactElement.cloneNode(true));
+                    }
+                });
+                
+                // 移除分页控件
+                const oldPagination = document.getElementById('contactsPagination');
+                if (oldPagination) oldPagination.remove();
+                
+                // 重新绑定所有列表的点击事件
+                bindAllContactClickEvents();
+            };
+            
+            // 绑定所有联系人的点击事件
+            function bindAllContactClickEvents() {
+                document.querySelectorAll('#friendsList .contact-item, #groupsList .contact-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        // 触发主列表中对应的项目点击
+                        const mainItem = document.querySelector(`#contactsList .contact-item[data-id="${this.dataset.id}"]`);
+                        if (mainItem) {
+                            mainItem.click();
+                        }
+                    });
+                });
+            }
+        }, 100);
+    });
+    
+    // 自动调整输入框高度
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    }
+    
+    // 搜索功能增强
+    const searchInput = document.getElementById('searchContactInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const activeTab = document.querySelector('.nav-pills .nav-link.active').getAttribute('href');
+            const contacts = document.querySelectorAll(activeTab + ' .contact-item');
+            
+            contacts.forEach(contact => {
+                const name = contact.querySelector('.contact-name')?.textContent.toLowerCase() || '';
+                if (name.includes(searchTerm)) {
+                    contact.style.display = 'flex';
+                } else {
+                    contact.style.display = 'none';
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}

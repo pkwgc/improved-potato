@@ -1,0 +1,167 @@
+{% extends "user_base.html" %}
+
+{% block title %}指令审批中心{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">指令审批中心</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if pending_messages %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>联系人</th>
+                                    <th>消息类型</th>
+                                    <th>消息内容</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for message in pending_messages %}
+                                <tr id="message-{{ message.id }}">
+                                    <td>{{ message.contact.nickname if message.contact else '未知联系人' }}</td>
+                                    <td>
+                                        <span class="badge badge-info">{{ message.message_type }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="message-content">
+                                            {{ message.content[:100] }}{% if message.content|length > 100 %}...{% endif %}
+                                        </div>
+                                        {% if message.content|length > 100 %}
+                                        <small><a href="#" onclick="toggleFullContent({{ message.id }})">查看完整内容</a></small>
+                                        <div id="full-content-{{ message.id }}" style="display: none;">
+                                            {{ message.content }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <button class="btn btn-success btn-sm" onclick="approveInstruction({{ message.id }})">
+                                            <i class="fas fa-check"></i> 批准
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="rejectInstruction({{ message.id }})">
+                                            <i class="fas fa-times"></i> 拒绝
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 暂无待审批的指令
+                        <br><small>AI生成的互动指令将在此处显示，您可以选择批准或拒绝发送</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFullContent(messageId) {
+    const fullContent = document.getElementById(`full-content-${messageId}`);
+    if (fullContent.style.display === 'none') {
+        fullContent.style.display = 'block';
+    } else {
+        fullContent.style.display = 'none';
+    }
+}
+
+function approveInstruction(messageId) {
+    if (!confirm('确定要批准这条指令吗？批准后将立即发送给对应联系人。')) {
+        return;
+    }
+    
+    fetch(`/user/approve_instruction/${messageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById(`message-${messageId}`).remove();
+            showNotification('指令已批准并发送', 'success');
+            
+            if (document.querySelectorAll('tbody tr').length === 0) {
+                location.reload();
+            }
+        } else {
+            showNotification('操作失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('操作失败', 'error');
+    });
+}
+
+function rejectInstruction(messageId) {
+    if (!confirm('确定要拒绝这条指令吗？')) {
+        return;
+    }
+    
+    fetch(`/user/reject_instruction/${messageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById(`message-${messageId}`).remove();
+            showNotification('指令已拒绝', 'success');
+            
+            if (document.querySelectorAll('tbody tr').length === 0) {
+                location.reload();
+            }
+        } else {
+            showNotification('操作失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('操作失败', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', notification);
+    
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

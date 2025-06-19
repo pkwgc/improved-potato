@@ -1,0 +1,305 @@
+{% extends "user_base.html" %}
+
+{% block title %}用户仪表盘 - AI商业化系统{% endblock %}
+
+{% block content %}
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">欢迎, {{ user.username }}</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshStats()">
+                                <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if message %}
+                <div class="alert alert-{{ message_type }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endif %}
+                
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-coin"></i> Token余额</h5>
+                                <h2 class="card-text">{{ user.token_balance }}</h2>
+                                <p class="card-text">当前可用Token数量</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-success text-white">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-chat"></i> 今日对话</h5>
+                                <h2 class="card-text">{{ today_chat_count }}</h2>
+                                <p class="card-text">今日对话次数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-info text-white">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-file-earmark-text"></i> 当前模板</h5>
+                                <h2 class="card-text">{{ current_template }}</h2>
+                                <p class="card-text">已绑定的模板</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-warning text-dark">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-box"></i> 套餐</h5>
+                                <h2 class="card-text">{{ user.token_package or '无' }}</h2>
+                                <p class="card-text">当前套餐</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">聊天窗口</h5>
+                            </div>
+                            <div class="card-body position-relative" style="height: 500px; overflow: hidden; display: flex; flex-direction: column;">
+                                <div id="chatMessages" class="chat-messages flex-grow-1" style="overflow-y: auto; max-height: 400px; padding: 15px;">
+                                    {% if recent_messages %}
+                                        {% for message in recent_messages %}
+                                            <div class="message message-{% if message.is_from_user %}user{% else %}ai{% endif %} mb-3">
+                                                <div class="message-content">{{ message.content }}</div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center text-muted my-5">
+                                            <p>欢迎使用AI聊天助手</p>
+                                            <p>请在下方输入框发送消息开始聊天</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="chat-input mt-3 d-flex">
+                                    <input type="text" id="messageInput" class="form-control me-2" placeholder="输入消息..." onkeypress="if(event.keyCode==13) sendMessage()">
+                                    <button class="btn btn-primary" onclick="sendMessage()">
+                                        <i class="bi bi-send"></i> 发送
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Token使用趋势 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-graph-up"></i> Token使用趋势</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="tokenUsageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <!-- 当前模板信息 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-file-earmark-text"></i> 当前模板</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if current_template_info %}
+                                    <h5>{{ current_template_info.name }}</h5>
+                                    <p class="text-muted">行业: {{ current_template_info.industry_name or '通用' }}</p>
+                                    <div class="mb-3">
+                                        <strong>描述:</strong>
+                                        <p>{{ current_template_info.description or '无描述' }}</p>
+                                    </div>
+                                <a href="{{ url_for('user_templates') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-arrow-repeat"></i> 更换模板
+                                </a>
+
+                                {% else %}
+                                    <div class="text-center">
+                                        <p class="text-muted">您还没有绑定模板</p>
+                                        <a href="{{ url_for('user_templates') }}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-plus-circle"></i> 选择模板
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 套餐信息 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-credit-card"></i> 套餐信息</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if user.token_package %}
+                                    <h5>{{ package_info.name }}</h5>
+                                    <p>{{ package_info.description }}</p>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Token余额:</span>
+                                        <span><strong>{{ user.token_balance }}</strong></span>
+                                    </div>
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (user.token_balance / package_info.token_amount) * 100 }}%" aria-valuenow="{{ user.token_balance }}" aria-valuemin="0" aria-valuemax="{{ package_info.token_amount }}"></div>
+                                    </div>
+                                    <a href="{{ url_for('user_token_packages') }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-plus-circle"></i> 购买套餐
+                                    </a>
+                                {% else %}
+                                    <div class="text-center">
+                                        <p class="text-muted">您还没有购买套餐</p>
+                                        <a href="{{ url_for('user_token_packages') }}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-plus-circle"></i> 购买套餐
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 最近活动 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-activity"></i> 最近活动</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    {% if recent_activities %}
+                                        {% for activity in recent_activities %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi {{ activity.icon }}"></i>
+                                                    {{ activity.description }}
+                                                    <small class="d-block text-muted">{{ activity.timestamp }}</small>
+                                                </div>
+                                                {% if activity.tokens %}
+                                                    <span class="badge bg-primary rounded-pill">{{ activity.tokens }} tokens</span>
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="list-group-item text-center text-muted">
+                                            暂无活动记录
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.userId = '{{ user.user_id }}';
+    window.currentWechatId = '{{ default_wechat_id or "" }}';
+    console.log('准备初始化全局Socket:');
+    console.log('准备初始化全局Socket:', window.userId, window.currentWechatId);
+
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        const chatMessages = document.getElementById('chatMessages');
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'message message-user mb-3';
+        userMessageDiv.innerHTML = `<div class="message-content">${message}</div>`;
+        chatMessages.appendChild(userMessageDiv);
+
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'message message-ai mb-3 loading-message';
+        loadingDiv.innerHTML = `<div class="message-content"><i class="bi bi-three-dots"></i> AI正在思考...</div>`;
+        chatMessages.appendChild(loadingDiv);
+
+        messageInput.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: '{{ user.user_id }}',
+                content: message,
+                nameuser: '{{ user.username }}'
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            chatMessages.removeChild(loadingDiv);
+            const aiMessageDiv = document.createElement('div');
+            aiMessageDiv.className = 'message message-ai mb-3';
+            aiMessageDiv.innerHTML = `<div class="message-content">${data.reply || data.error || '抱歉，处理请求时出错'}</div>`;
+            chatMessages.appendChild(aiMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            refreshStats();
+        })
+        .catch(error => {
+            chatMessages.removeChild(loadingDiv);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message message-ai mb-3 error-message';
+            errorDiv.innerHTML = `<div class="message-content">发送失败，请稍后重试</div>`;
+            chatMessages.appendChild(errorDiv);
+            console.error('Error:', error);
+        });
+    }
+
+    function refreshStats() {
+        fetch('/user/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.querySelector('.stats-card:nth-child(1) h2').textContent = data.token_balance;
+                document.querySelector('.stats-card:nth-child(2) h2').textContent = data.today_chat_count;
+                updateTokenUsageChart(data.token_usage_data);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function updateTokenUsageChart(data) {
+        const ctx = document.getElementById('tokenUsageChart').getContext('2d');
+        if (window.tokenUsageChart) window.tokenUsageChart.destroy();
+        window.tokenUsageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Token使用量',
+                    data: data.values,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } },
+                plugins: { title: { display: true, text: '最近7天Token使用趋势' } }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const tokenUsageData = {
+            labels: {{ token_usage_labels|safe }},
+            values: {{ token_usage_values|safe }}
+        };
+        updateTokenUsageChart(tokenUsageData);
+
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        if (window.userId && window.currentWechatId && window.initGlobalSocket) {
+            console.log("调用 WebSocket 初始化", window.userId, window.currentWechatId);
+            window.initGlobalSocket(window.userId, window.currentWechatId);
+        } else {
+            console.warn("缺少 userId / wechatId / initGlobalSocket，WebSocket 未初始化");
+        }
+    });
+</script>
+{% endblock %}
+

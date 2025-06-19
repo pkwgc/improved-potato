@@ -1,0 +1,63 @@
+{% extends "admin_base.html" %}
+
+{% block title %}朋友圈AI画像设置{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-person-badge"></i> 朋友圈AI画像分析设置</h5>
+                </div>
+                <div class="card-body">
+                    {% if message %}
+                    <div class="alert alert-{{ message_type }}">
+                        {{ message }}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{{ url_for('admin_update_ai_profiling_settings') }}">
+                        <div class="mb-3">
+                            <label for="profilingPromptTemplate" class="form-label">朋友圈画像分析提示词模板</label>
+                            <textarea class="form-control" id="profilingPromptTemplate" name="profiling_prompt_template" rows="15">{{ profiling_prompt_template }}</textarea>
+                            <small class="form-text text-muted">
+                                可用的占位符：<br>
+                                {moments_content} - 朋友圈内容（自动填充）<br>
+                                请确保返回格式为JSON，包含summary、labels、category、hobbies字段
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="systemMessage" class="form-label">系统消息</label>
+                            <textarea class="form-control" id="systemMessage" name="system_message" rows="3">{{ system_message }}</textarea>
+                            <small class="form-text text-muted">定义AI的角色和行为准则</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="temperature" class="form-label">温度参数</label>
+                                    <input type="number" class="form-control" id="temperature" name="temperature" 
+                                           value="{{ temperature }}" min="0" max="2" step="0.1">
+                                    <small class="form-text text-muted">控制AI回复的创造性，0-2之间</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="maxTokens" class="form-label">最大Token数</label>
+                                    <input type="number" class="form-control" id="maxTokens" name="max_tokens" 
+                                           value="{{ max_tokens }}" min="100" max="4000">
+                                    <small class="form-text text-muted">限制AI回复的长度</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">保存设置</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

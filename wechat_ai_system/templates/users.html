@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户管理 - AI商业化系统</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+</head>
+<body>
+    <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">AI商业化系统</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="{{ url_for('admin_logout') }}">退出登录</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="sidebar-sticky">
+				{% set is_admin = True %}
+                {% include 'sidebar.html' %}
+                </div>
+            </nav>
+            
+            <main class="main-content col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">用户管理</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportUserData()">
+                                <i class="bi bi-download"></i> 导出数据
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="bi bi-person-plus"></i> 新增用户
+                        </button>
+                    </div>
+                </div>
+                
+                {% if message %}
+                <div class="alert alert-{{ message_type }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endif %}
+                
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-people"></i> 总用户数</h5>
+                                <h2 class="card-text">{{ users|length }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-success text-white">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-person-check"></i> 活跃用户</h5>
+                                <h2 class="card-text">{{ active_users_count }}</h2>
+                                <p class="card-text">最近7天</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-info text-white">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-currency-exchange"></i> 总Token消耗</h5>
+                                <h2 class="card-text">{{ "{:,}".format(total_tokens) }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card bg-warning text-dark">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-clock"></i> 平均响应时间</h5>
+                                <h2 class="card-text">{{ "{:.2f}".format(avg_response_time) }}秒</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 搜索栏 -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form action="{{ url_for('admin_users') }}" method="get" class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="search" placeholder="搜索用户名/用户ID..." value="{{ request.args.get('search', '') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="filter">
+                                    <option value="all" {% if request.args.get('filter') == 'all' %}selected{% endif %}>所有用户</option>
+                                    <option value="active" {% if request.args.get('filter') == 'active' %}selected{% endif %}>活跃用户</option>
+                                    <option value="inactive" {% if request.args.get('filter') == 'inactive' %}selected{% endif %}>非活跃用户</option>
+                                    <option value="appointment" {% if request.args.get('filter') == 'appointment' %}selected{% endif %}>已预约用户</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="sort">
+                                    <option value="recent" {% if request.args.get('sort') == 'recent' %}selected{% endif %}>最近活跃</option>
+                                    <option value="tokens" {% if request.args.get('sort') == 'tokens' %}selected{% endif %}>Token消耗</option>
+                                    <option value="duration" {% if request.args.get('sort') == 'duration' %}selected{% endif %}>使用时长</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-search"></i> 搜索
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 用户列表 -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover user-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>用户ID</th>
+                                        <th>用户名</th>
+                                        <th>绑定模板</th>
+                                        <th>Token余额</th>
+                                        <th>Token消耗</th>
+                                        <th>对话次数</th>
+                                        <th>活跃天数</th>
+                                        <th>预约状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.id }}</td>
+                                        <td>{{ user.user_id }}</td>
+                                        <td>{{ user.username }}</td>
+                                        <td>
+                                            {% if user.template %}
+                                            <span class="badge bg-info">{{ user.template }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">未绑定</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success badge-token">{{ "{:,}".format(user.token_balance) }}</span>
+                                        </td>
+                                        <td>{{ "{:,}".format(user.tokens) }}</td>
+                                        <td>{{ user.conversations }}</td>
+                                        <td>{{ user.active_days }}</td>
+                                        <td>
+                                            {% if user.has_appointment %}
+                                            <span class="badge bg-primary">已预约</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">未预约</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+											<!--  chat_history?user_id=pk_wgc&filter_type=all&search=-->
+
+                                                <a href="{{ url_for('admin_chat_history') }}?user_id={{ user.user_id }}" class="btn btn-sm btn-outline-info">
+                                                    <i class="bi bi-chat-text"></i> 聊天记录
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editUser({{ user.id }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 分页 -->
+                        {% if total_pages > 1 %}
+                        <nav aria-label="用户列表分页" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item {{ 'disabled' if current_page == 1 else '' }}">
+                                    <a class="page-link" href="{{ url_for('admin_users', page=current_page-1, search=request.args.get('search', ''), filter=request.args.get('filter', 'all'), sort=request.args.get('sort', 'recent')) }}" aria-label="上一页">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                {% for i in range(1, total_pages + 1) %}
+                                    {% if i == current_page %}
+                                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                    {% elif i <= 3 or i >= total_pages - 2 or (i >= current_page - 1 and i <= current_page + 1) %}
+                                    <li class="page-item"><a class="page-link" href="{{ url_for('admin_users', page=i, search=request.args.get('search', ''), filter=request.args.get('filter', 'all'), sort=request.args.get('sort', 'recent')) }}">{{ i }}</a></li>
+                                    {% elif i == 4 and current_page > 5 or i == total_pages - 3 and current_page < total_pages - 4 %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <li class="page-item {{ 'disabled' if current_page == total_pages else '' }}">
+                                    <a class="page-link" href="{{ url_for('admin_users', page=current_page+1, search=request.args.get('search', ''), filter=request.args.get('filter', 'all'), sort=request.args.get('sort', 'recent')) }}" aria-label="下一页">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- 编辑用户模态框 -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">编辑用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm" method="POST" action="{{ url_for('admin_edit_user') }}">
+                        <input type="hidden" id="editUserId" name="user_id">
+                        <div class="mb-3">
+                            <label for="editUsername" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="editUsername" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTokenBalance" class="form-label">Token余额</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editTokenBalance" name="token_balance" min="0" required>
+                                <button class="btn btn-outline-success" type="button" onclick="showRechargeModal()">
+                                    <i class="bi bi-cash-coin"></i> 充值
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTokenLimit" class="form-label">Token限制</label>
+                            <input type="number" class="form-control" id="editTokenLimit" name="token_limit" min="0">
+                            <div class="form-text">设置为0表示无限制</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTemplate" class="form-label">绑定模板</label>
+                            <select class="form-select" id="editTemplate" name="template">
+                                <option value="">-- 不绑定模板 --</option>
+                                {% for template in templates %}
+                                <option value="{{ template.name }}">{{ template.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editHasAppointment" name="has_appointment">
+                            <label class="form-check-label" for="editHasAppointment">预约状态</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="identity" class="form-label">用户身份</label>
+                            <input type="text" class="form-control" id="editIdentity" name="identity">
+                            <div class="form-text">例如：医生、教师、学生等</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="hobbies" class="form-label">用户爱好</label>
+                            <textarea class="form-control" id="editHobbies" name="hobbies" rows="3"></textarea>
+                            <div class="form-text">例如：阅读、旅游、摄影等</div>
+                        </div>
+                        
+                        <hr>
+                        <h6 class="text-muted">实名认证信息（防备用）</h6>
+                        <div class="mb-3">
+                            <label for="editRealName" class="form-label">真实姓名</label>
+                            <input type="text" class="form-control" id="editRealName" name="real_name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editIdNumber" class="form-label">身份证号</label>
+                            <input type="text" class="form-control" id="editIdNumber" name="id_number">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPhone" class="form-label">手机号</label>
+                            <input type="text" class="form-control" id="editPhone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="editEmail" name="email">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('editUserForm').submit()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加用户模态框 -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">新增用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm" method="POST" action="{{ url_for('admin_add_user') }}">
+                        <div class="mb-3">
+                            <label for="addUserId" class="form-label">用户ID</label>
+                            <input type="text" class="form-control" id="addUserId" name="user_id" required>
+                            <div class="form-text">例如：wxid_123456</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addUsername" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="addUsername" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addTokenBalance" class="form-label">Token余额</label>
+                            <input type="number" class="form-control" id="addTokenBalance" name="token_balance" min="0" value="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addTokenLimit" class="form-label">Token限制</label>
+                            <input type="number" class="form-control" id="addTokenLimit" name="token_limit" min="0" value="0">
+                            <div class="form-text">设置为0表示无限制</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addTemplate" class="form-label">绑定模板</label>
+                            <select class="form-select" id="addTemplate" name="template">
+                                <option value="">-- 不绑定模板 --</option>
+                                {% for template in templates %}
+                                <option value="{{ template.name }}">{{ template.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="addHasAppointment" name="has_appointment">
+                            <label class="form-check-label" for="addHasAppointment">预约状态</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addIdentity" class="form-label">用户身份</label>
+                            <input type="text" class="form-control" id="addIdentity" name="identity">
+                            <div class="form-text">例如：医生、教师、学生等</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addHobbies" class="form-label">用户爱好</label>
+                            <textarea class="form-control" id="addHobbies" name="hobbies" rows="3"></textarea>
+                            <div class="form-text">例如：阅读、旅游、摄影等</div>
+                        </div>
+                        
+                        <hr>
+                        <h6 class="text-muted">实名认证信息（防备用）</h6>
+                        <div class="mb-3">
+                            <label for="addRealName" class="form-label">真实姓名</label>
+                            <input type="text" class="form-control" id="addRealName" name="real_name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addIdNumber" class="form-label">身份证号</label>
+                            <input type="text" class="form-control" id="addIdNumber" name="id_number">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addPhone" class="form-label">手机号</label>
+                            <input type="text" class="form-control" id="addPhone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addEmail" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="addEmail" name="email">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('addUserForm').submit()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 充值模态框 -->
+    <div class="modal fade" id="rechargeModal" tabindex="-1" aria-labelledby="rechargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rechargeModalLabel">充值Token</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="rechargeForm" method="POST" action="{{ url_for('admin_recharge_user') }}">
+                        <input type="hidden" id="rechargeUserId" name="user_id">
+                        <div class="mb-3">
+                            <label for="rechargeUserName" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="rechargeUserName" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="currentBalance" class="form-label">当前余额</label>
+                            <input type="text" class="form-control" id="currentBalance" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rechargeAmount" class="form-label">充值数量</label>
+                            <input type="number" class="form-control" id="rechargeAmount" name="amount" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rechargePackage" class="form-label">选择套餐包</label>
+                            <select class="form-select" id="rechargePackage" name="package">
+                                <option value="">自定义充值</option>
+                                {% for package in token_packages %}
+                                <option value="{{ package.token_amount }}" data-name="{{ package.name }}">{{ package.name }} ({{ package.token_amount }} Tokens)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rechargeNote" class="form-label">备注</label>
+                            <textarea class="form-control" id="rechargeNote" name="note" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('rechargeForm').submit()">确认充值</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 编辑用户
+        function editUser(userId) {
+            fetch(`/admin/user/${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('User data:', data); // 调试信息
+                    document.getElementById('editUserId').value = data.user_id;
+                    document.getElementById('editUsername').value = data.username;
+                    document.getElementById('editTokenBalance').value = data.token_balance;
+                    document.getElementById('editTokenLimit').value = data.token_limit;
+                    document.getElementById('editTemplate').value = data.template || '';
+                    document.getElementById('editHasAppointment').checked = data.has_appointment;
+                    document.getElementById('editIdentity').value = data.identity || '';
+                    document.getElementById('editHobbies').value = data.hobbies || '';
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取用户信息失败，请重试: ' + error.message);
+                });
+        }
+        
+        // 导出用户数据
+        function exportUserData() {
+            const search = "{{ request.args.get('search', '') }}";
+            const filter = "{{ request.args.get('filter', 'all') }}";
+            const sort = "{{ request.args.get('sort', 'recent') }}";
+            
+            window.location.href = `{{ url_for('admin_users') }}?export=csv&search=${search}&filter=${filter}&sort=${sort}`;
+        }
+        
+        // 显示充值模态框
+        function showRechargeModal() {
+            // 获取当前编辑的用户信息
+            const userId = document.getElementById('editUserId').value;
+            const userName = document.getElementById('editUsername').value;
+            const balance = document.getElementById('editTokenBalance').value;
+            
+            // 设置充值模态框的值
+            document.getElementById('rechargeUserId').value = userId;
+            document.getElementById('rechargeUserName').value = userName;
+            document.getElementById('currentBalance').value = balance;
+            document.getElementById('rechargeAmount').value = '';
+            document.getElementById('rechargeNote').value = '';
+            
+            // 隐藏编辑模态框，显示充值模态框
+            const editModal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+            editModal.hide();
+            
+            const rechargeModal = new bootstrap.Modal(document.getElementById('rechargeModal'));
+            rechargeModal.show();
+            
+            console.log('充值用户ID:', userId);
+        }
+        
+        // 套餐包选择变更时自动填充充值数量
+        document.addEventListener('DOMContentLoaded', function() {
+            const packageSelect = document.getElementById('rechargePackage');
+            if (packageSelect) {
+                packageSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        document.getElementById('rechargeAmount').value = this.value;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+{% extends "admin_base.html" %}
+
+{% block title %}意向分层统计{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">意向分层统计</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i> 刷新数据
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#configModal">
+                <i class="bi bi-gear"></i> 分层配置
+            </button>
+            <button type="button" class="btn btn-sm btn-success" onclick="exportReport()">
+                <i class="bi bi-download"></i> 导出报表
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 意向分层概览 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-heart-fill"></i> 高意向</h5>
+                <h2 class="card-text">{{ intent_stats.get('高意向', 0) }}</h2>
+                <p class="card-text">
+                    <small>
+                        {% if intent_trends.get('高意向', 0) > 0 %}
+                            <i class="bi bi-arrow-up"></i> +{{ intent_trends.get('高意向', 0) }}
+                        {% elif intent_trends.get('高意向', 0) < 0 %}
+                            <i class="bi bi-arrow-down"></i> {{ intent_trends.get('高意向', 0) }}
+                        {% else %}
+                            <i class="bi bi-dash"></i> 0
+                        {% endif %}
+                        较昨日
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-heart-half"></i> 一般意向</h5>
+                <h2 class="card-text">{{ intent_stats.get('一般意向', 0) }}</h2>
+                <p class="card-text">
+                    <small>
+                        {% if intent_trends.get('一般意向', 0) > 0 %}
+                            <i class="bi bi-arrow-up"></i> +{{ intent_trends.get('一般意向', 0) }}
+                        {% elif intent_trends.get('一般意向', 0) < 0 %}
+                            <i class="bi bi-arrow-down"></i> {{ intent_trends.get('一般意向', 0) }}
+                        {% else %}
+                            <i class="bi bi-dash"></i> 0
+                        {% endif %}
+                        较昨日
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-heart"></i> 沉默</h5>
+                <h2 class="card-text">{{ intent_stats.get('沉默', 0) }}</h2>
+                <p class="card-text">
+                    <small>
+                        {% if intent_trends.get('沉默', 0) > 0 %}
+                            <i class="bi bi-arrow-up"></i> +{{ intent_trends.get('沉默', 0) }}
+                        {% elif intent_trends.get('沉默', 0) < 0 %}
+                            <i class="bi bi-arrow-down"></i> {{ intent_trends.get('沉默', 0) }}
+                        {% else %}
+                            <i class="bi bi-dash"></i> 0
+                        {% endif %}
+                        较昨日
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-check-circle-fill"></i> 已成交</h5>
+                <h2 class="card-text">{{ intent_stats.get('已成交', 0) }}</h2>
+                <p class="card-text">
+                    <small>
+                        {% if intent_trends.get('已成交', 0) > 0 %}
+                            <i class="bi bi-arrow-up"></i> +{{ intent_trends.get('已成交', 0) }}
+                        {% elif intent_trends.get('已成交', 0) < 0 %}
+                            <i class="bi bi-arrow-down"></i> {{ intent_trends.get('已成交', 0) }}
+                        {% else %}
+                            <i class="bi bi-dash"></i> 0
+                        {% endif %}
+                        较昨日
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 趋势图表 -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-graph-up"></i> 意向趋势变化</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="intentTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart"></i> 意向分布</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="intentDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 意向变化详情 -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-list-ul"></i> 意向变化详情</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>客户</th>
+                        <th>原意向</th>
+                        <th>当前意向</th>
+                        <th>变化类型</th>
+                        <th>置信度</th>
+                        <th>检测时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for change in intent_changes %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle me-2"></i>
+                                <div>
+                                    <strong>{{ change.user.username }}</strong><br>
+                                    <small class="text-muted">{{ change.user.user_id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ change.previous_intent or '未知' }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if change.intent_type == '高意向' %}danger{% elif change.intent_type == '一般意向' %}warning{% elif change.intent_type == '已成交' %}success{% else %}secondary{% endif %}">
+                                {{ change.intent_type }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if change.intent_change %}
+                                <span class="badge bg-{% if change.intent_change == '上升' %}success{% elif change.intent_change == '下降' %}danger{% elif change.intent_change == '成交' %}primary{% else %}secondary{% endif %}">
+                                    {{ change.intent_change }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ (change.confidence_score * 100) | round(1) }}%</td>
+                        <td>{{ change.detected_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewContext({{ change.id }})">
+                                <i class="bi bi-eye"></i> 查看
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 分层配置模态框 -->
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">意向分层配置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="configForm">
+                    {% for intent_type, config in intent_config.items() %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6>{{ intent_type }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">最低置信度</label>
+                                    <input type="number" class="form-control" name="{{ intent_type }}_score_min" 
+                                           value="{{ config.score_min }}" min="0" max="1" step="0.1">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">关键词（逗号分隔）</label>
+                                    <input type="text" class="form-control" name="{{ intent_type }}_keywords" 
+                                           value="{{ config.keywords | join(', ') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// 意向趋势图表
+const trendCtx = document.getElementById('intentTrendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: {{ trend_labels | safe }},
+        datasets: [
+            {
+                label: '高意向',
+                data: {{ trend_data.高意向 | safe }},
+                borderColor: 'rgb(220, 53, 69)',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: '一般意向',
+                data: {{ trend_data.一般意向 | safe }},
+                borderColor: 'rgb(255, 193, 7)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: '已成交',
+                data: {{ trend_data.已成交 | safe }},
+                borderColor: 'rgb(25, 135, 84)',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                tension: 0.4
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 意向分布饼图
+const distributionCtx = document.getElementById('intentDistributionChart').getContext('2d');
+new Chart(distributionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['高意向', '一般意向', '沉默', '已成交'],
+        datasets: [{
+            data: [
+                {{ intent_stats.高意向 or 0 }},
+                {{ intent_stats.一般意向 or 0 }},
+                {{ intent_stats.沉默 or 0 }},
+                {{ intent_stats.已成交 or 0 }}
+            ],
+            backgroundColor: [
+                'rgb(220, 53, 69)',
+                'rgb(255, 193, 7)',
+                'rgb(108, 117, 125)',
+                'rgb(25, 135, 84)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+function refreshData() {
+    location.reload();
+}
+
+function exportReport() {
+    window.open('/admin/api/export/intent-report', '_blank');
+}
+
+function viewContext(changeId) {
+    fetch(`/admin/api/intent-change/${changeId}`)
+        .then(response => response.json())
+        .then(data => {
+            alert('上下文信息：\n' + JSON.stringify(data.context_data, null, 2));
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取上下文信息失败');
+        });
+}
+
+function saveConfig() {
+    const formData = new FormData(document.getElementById('configForm'));
+    const config = {};
+    
+    ['高意向', '一般意向', '沉默', '已成交'].forEach(intentType => {
+        config[intentType] = {
+            score_min: parseFloat(formData.get(`${intentType}_score_min`)),
+            keywords: formData.get(`${intentType}_keywords`).split(',').map(k => k.trim()).filter(k => k)
+        };
+    });
+    
+    fetch('/admin/api/intent-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
+            alert('配置保存成功');
+        } else {
+            alert('保存失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败');
+    });
+}
+</script>
+{% endblock %}

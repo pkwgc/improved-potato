@@ -1,0 +1,124 @@
+{
+    "DEEPSEEK_API_KEY": "sk-swbvomdfkigmcgedqkcjzvwysijotkbvqjblgtspzxjrutnh",
+    "DEEPSEEK_BASE_URL": "https://api.siliconflow.cn/v1/",
+    "MODEL": "deepseek-ai/DeepSeek-V3",
+    "MAX_TOKEN": 2000,
+    "TEMPERATURE": 1.0,
+    "MOONSHOT_API_KEY": "sk-",
+    "MOONSHOT_BASE_URL": "https://api.moonshot.cn/v1",
+    "MOONSHOT_MODEL": "moonshot-v1-128k-vision-preview",
+    "MOONSHOT_TEMPERATURE": 0.8,
+    "ENABLE_IMAGE_RECOGNITION": true,
+    "ENABLE_EMOJI_RECOGNITION": true,
+    "ENABLE_AUTO_MESSAGE": true,
+    "TOKEN_LIMIT_DEFAULT": 0,
+    "HAS_APPOINTMENT_DEFAULT": false,
+    "ENABLE_USER_PROFILE": true,
+    "USER_PROFILE_PLACEHOLDER_PREFIX": "{{",
+    "USER_PROFILE_PLACEHOLDER_SUFFIX": "}}",
+    "ENABLE_PERSONALIZED_PROMPT": true,
+    "PERSONALIZED_PROMPT_TEMPLATE": "你是专业的{行业}顾问，请结合用户信息和商品信息为客户提供个性化服务。\n\n【用户信息】\n姓名：{name}\n兴趣偏好：{兴趣}\n最近购买：{最近购买}\n\n【商品信息】\n库存详情：{product_inventory}\n\n当前对话内容：{user_input}\n请基于以上信息进行自然回复。",
+    "CUSTOM_PLACEHOLDERS": "[]",
+    "CHAT_ACTIVE_MINUTES": 30,
+    "GREETING_CONTEXT_MESSAGES": 5,
+    "MAX_CONTEXT_LENGTH": 5,
+    "MAX_CONTEXT_MESSAGES": 5,
+    "AUTO_MESSAGE": "请你模拟系统设置的角色，在微信上找对方发消息想知道对方在做什么",
+    "MIN_COUNTDOWN_HOURS": 1,
+    "MAX_COUNTDOWN_HOURS": 2,
+    "NOON_QUIET_TIME_START": "11:30",
+    "NOON_QUIET_TIME_END": "13:30",
+    "EVENING_QUIET_TIME_START": "22:00",
+    "EVENING_QUIET_TIME_END": "07:00",
+    "IP_WHITELIST": [],
+    "IP_BLACKLIST": [],
+    "RATE_LIMIT_PER_MINUTE": 600,
+    "USER_RATE_LIMIT_PER_MINUTE": 60,
+    "MAX_DAILY_REQUESTS_PER_USER": 1000,
+    "MAX_REQUEST_SIZE": 4096,
+    "ENABLE_USER_SPECIFIC_LIMITS": false,
+    "MAX_CONNECTION_TIME": 30,
+    "CONNECTION_TIMEOUT": 60,
+    "AI_RESPONSE_FORMAT": {
+        "reply": "",
+        "intent_type": "",
+        "intent_details": {
+            "name": null,
+            "confidence": 0.0,
+            "entities": {}
+        },
+        "user_info_detected": {},
+        "order_info": null
+    },
+    "AI_RESPONSE_SCHEMA": {
+        "type": "object",
+        "required": [
+            "reply",
+            "intent_type",
+            "intent_details"
+        ],
+        "properties": {
+            "reply": {
+                "type": "string"
+            },
+            "intent_type": {
+                "type": "string",
+                "enum": [
+                    "specific_intent",
+                    "no_intent",
+                    "casual_chat"
+                ]
+            },
+            "intent_details": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "confidence",
+                    "entities"
+                ],
+                "properties": {
+                    "name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                    },
+                    "entities": {
+                        "type": "object"
+                    }
+                }
+            },
+            "user_info_detected": {
+                "type": "object"
+            },
+            "order_info": {
+                "type": [
+                    "object",
+                    "null"
+                ],
+                "properties": {
+                    "order_id": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "products": {
+                        "type": "array"
+                    },
+                    "total_amount": {
+                        "type": "number"
+                    },
+                    "shipping_info": {
+                        "type": "object"
+                    }
+                }
+            }
+        }
+    }
+}

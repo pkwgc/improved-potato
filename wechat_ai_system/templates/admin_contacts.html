@@ -1,0 +1,852 @@
+{% extends "admin_base.html" %}
+
+{% block title %}联系人管理 - AI商业化系统{% endblock %}
+
+{% block additional_styles %}
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.contact-card {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.contact-card:hover {
+    background-color: #f8f9fa;
+}
+.contact-card.selected {
+    background-color: #e9ecef;
+}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">联系人管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshContacts()">
+                <i class="bi bi-arrow-clockwise"></i> 刷新
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">联系人列表</h5>
+                <div>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" onclick="filterContacts('all')">全部</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterContacts('friend')">好友</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterContacts('group')">群组</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="searchInput" class="form-control" placeholder="搜索联系人..." onkeyup="searchContacts()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="searchContacts()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="contactsList" class="list-group" style="max-height: 500px; overflow-y: auto;">
+                    <!-- 联系人列表将通过JavaScript动态加载 -->
+                    <div class="text-center py-3" id="loadingContacts">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">联系人详情</h5>
+            </div>
+            <div class="card-body">
+                <div id="contactDetails">
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+                        <p class="mt-3">请选择一个联系人查看详情</p>
+                    </div>
+                </div>
+                
+                <div id="contactActions" class="mt-4 d-none">
+                    <h5>操作</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="showSendMessageModal()">
+                            <i class="bi bi-chat"></i> 发送消息
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="toggleAIReply()">
+                            <i class="bi bi-robot"></i> <span id="aiReplyButtonText">启用AI回复</span>
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="showAIStrategyModal()">
+                            <i class="bi bi-gear"></i> 配置AI策略
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 发送消息模态框 -->
+<div class="modal fade" id="sendMessageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">发送消息</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">消息类型</label>
+                    <select class="form-select" id="messageType">
+                        <option value="text" selected>文本</option>
+                        <option value="image">图片</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="textMessageInput">
+                    <label class="form-label">消息内容</label>
+                    <textarea class="form-control" id="messageContent" rows="4" placeholder="输入消息内容..."></textarea>
+                </div>
+                
+                <div class="mb-3 d-none" id="imageMessageInput">
+                    <label class="form-label">上传图片</label>
+                    <input type="file" class="form-control" id="imageUpload" accept="image/*">
+                    <div class="mt-2" id="imagePreview"></div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="scheduleMessage">
+                        <label class="form-check-label" for="scheduleMessage">
+                            定时发送
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-3 d-none" id="scheduleTimeInput">
+                    <label class="form-label">发送时间</label>
+                    <input type="datetime-local" class="form-control" id="scheduleTime">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI策略模态框 -->
+<div class="modal fade" id="aiStrategyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">配置AI策略</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">选择AI策略</label>
+                    <select class="form-select" id="aiStrategy">
+                        <!-- AI策略列表将通过JavaScript动态加载 -->
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="keywordFilterEnabled">
+                        <label class="form-check-label" for="keywordFilterEnabled">
+                            启用关键词过滤
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="keywordFilters" class="d-none">
+                    <h6>关键词列表</h6>
+                    <div id="keywordList">
+                        <!-- 关键词列表将通过JavaScript动态加载 -->
+                    </div>
+                    
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="addKeywordFilter()">
+                            <i class="bi bi-plus"></i> 添加关键词
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveAIStrategy()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"></script>
+<script>
+    // 全局变量
+    let contacts = [];
+    let selectedContact = null;
+    let socket = null;
+    let currentFilter = 'all';
+    let searchTerm = '';
+    
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 加载联系人列表
+        loadContacts();
+        
+        // 连接WebSocket
+        connectWebSocket();
+        
+        // 设置事件监听器
+        document.getElementById('messageType').addEventListener('change', toggleMessageInputType);
+        document.getElementById('scheduleMessage').addEventListener('change', toggleScheduleTimeInput);
+        document.getElementById('keywordFilterEnabled').addEventListener('change', toggleKeywordFilters);
+        document.getElementById('imageUpload').addEventListener('change', previewImage);
+    });
+    
+    // 连接WebSocket
+    function connectWebSocket() {
+        socket = io();
+        
+        socket.on('connect', function() {
+            console.log('WebSocket连接成功');
+            
+            // 认证
+            socket.emit('authenticate', {
+                user_id: '{{ user.user_id }}'
+            });
+        });
+        
+        socket.on('authenticated', function(data) {
+            console.log('WebSocket认证成功:', data);
+        });
+        
+        socket.on('new_message', function(data) {
+            console.log('收到新消息:', data);
+            // 可以在这里添加通知或刷新联系人列表
+        });
+        
+        socket.on('error', function(data) {
+            console.error('WebSocket错误:', data);
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('WebSocket断开连接');
+        });
+        
+        socket.io.on("ping", () => {
+            console.log("💓 客户端发送 ping");
+        });
+
+        socket.io.on("pong", () => {
+            console.log("💓 收到服务端 pong");
+        });
+
+        socket.on('reconnect', function() {
+            console.log('WebSocket重连成功');
+            socket.emit('authenticate', {
+                user_id: '{{ user.user_id }}'
+            });
+        });
+
+        socket.on('connect_error', function(error) {
+            console.error('WebSocket连接错误:', error);
+        });
+
+        socket.on('reconnect_error', function(error) {
+            console.error('WebSocket重连错误:', error);
+        });
+
+        socket.on('reconnect_failed', function() {
+            console.error('WebSocket重连失败');
+        });
+        
+        socket.io.on("ping", () => {
+            console.log("💓 客户端发送 ping");
+        });
+
+        socket.io.on("pong", () => {
+            console.log("💓 收到服务端 pong");
+        });
+
+        socket.on('reconnect', function() {
+            console.log('WebSocket重连成功');
+            socket.emit('authenticate', {
+                user_id: '{{ user.user_id }}'
+            });
+        });
+
+        socket.on('connect_error', function(error) {
+            console.error('WebSocket连接错误:', error);
+        });
+
+        socket.on('reconnect_error', function(error) {
+            console.error('WebSocket重连错误:', error);
+        });
+
+        socket.on('reconnect_failed', function() {
+            console.error('WebSocket重连失败');
+        });
+    }
+    
+    // 加载联系人列表
+    function loadContacts() {
+        const contactsList = document.getElementById('contactsList');
+        document.getElementById('loadingContacts').style.display = 'block';
+        
+        fetch(`/api/contacts?owner_id={{ user.user_id }}`)
+            .then(response => response.json())
+            .then(data => {
+                contacts = data.contacts || [];
+                document.getElementById('loadingContacts').style.display = 'none';
+                
+                if (contacts.length === 0) {
+                    contactsList.innerHTML = '<div class="text-center py-3 text-muted">暂无联系人</div>';
+                    return;
+                }
+                
+                renderContacts();
+            })
+            .catch(error => {
+                console.error('Error loading contacts:', error);
+                document.getElementById('loadingContacts').style.display = 'none';
+                contactsList.innerHTML = '<div class="text-center py-3 text-danger">加载联系人失败，请刷新重试</div>';
+            });
+    }
+    
+    // 渲染联系人列表
+    function renderContacts() {
+        const contactsList = document.getElementById('contactsList');
+        let filteredContacts = contacts;
+        
+        // 应用过滤条件
+        if (currentFilter === 'friend') {
+            filteredContacts = contacts.filter(contact => !contact.is_group);
+        } else if (currentFilter === 'group') {
+            filteredContacts = contacts.filter(contact => contact.is_group);
+        }
+        
+        // 应用搜索条件
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filteredContacts = filteredContacts.filter(contact => 
+                (contact.nickname && contact.nickname.toLowerCase().includes(term)) ||
+                (contact.remark && contact.remark.toLowerCase().includes(term)) ||
+                (contact.wechat_id && contact.wechat_id.toLowerCase().includes(term))
+            );
+        }
+        
+        if (filteredContacts.length === 0) {
+            contactsList.innerHTML = '<div class="text-center py-3 text-muted">没有符合条件的联系人</div>';
+            return;
+        }
+        
+        let html = '';
+        filteredContacts.forEach(contact => {
+            const isSelected = selectedContact && selectedContact.id === contact.id;
+            const displayName = contact.remark || contact.nickname || contact.wechat_id;
+            const avatarSrc = contact.avatar || 'https://via.placeholder.com/40';
+            const groupIcon = contact.is_group ? '<i class="bi bi-people-fill text-primary ms-2"></i>' : '';
+            const aiStatus = contact.ai_reply_enabled ? 
+                '<span class="badge bg-success">AI已启用</span>' : 
+                '<span class="badge bg-secondary">AI已禁用</span>';
+            
+            html += `
+                <div class="list-group-item contact-card ${isSelected ? 'selected' : ''}" onclick="selectContact(${contact.id})">
+                    <div class="d-flex align-items-center">
+                        <img src="${avatarSrc}" class="contact-avatar me-3" alt="${displayName}">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${displayName} ${groupIcon}</h6>
+                                ${aiStatus}
+                            </div>
+                            <small class="text-muted">${contact.wechat_id}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        contactsList.innerHTML = html;
+    }
+    
+    // 选择联系人
+    function selectContact(contactId) {
+        selectedContact = contacts.find(contact => contact.id === contactId);
+        
+        // 更新UI
+        document.querySelectorAll('.contact-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        document.querySelectorAll(`.contact-card`).forEach(card => {
+            if (card.onclick.toString().includes(`selectContact(${contactId})`)) {
+                card.classList.add('selected');
+            }
+        });
+        
+        // 显示联系人详情
+        const contactDetails = document.getElementById('contactDetails');
+        const contactActions = document.getElementById('contactActions');
+        
+        if (!selectedContact) {
+            contactDetails.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+                    <p class="mt-3">请选择一个联系人查看详情</p>
+                </div>
+            `;
+            contactActions.classList.add('d-none');
+            return;
+        }
+        
+        const displayName = selectedContact.remark || selectedContact.nickname || selectedContact.wechat_id;
+        const avatarSrc = selectedContact.avatar || 'https://via.placeholder.com/100';
+        const groupIcon = selectedContact.is_group ? '<i class="bi bi-people-fill text-primary ms-2"></i>' : '';
+        const aiStatus = selectedContact.ai_reply_enabled ? 
+            '<span class="badge bg-success">AI已启用</span>' : 
+            '<span class="badge bg-secondary">AI已禁用</span>';
+        
+        contactDetails.innerHTML = `
+            <div class="text-center mb-4">
+                <img src="${avatarSrc}" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover;" alt="${displayName}">
+                <h4>${displayName} ${groupIcon}</h4>
+                <p class="text-muted">${selectedContact.wechat_id}</p>
+                <div>${aiStatus}</div>
+            </div>
+            
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">基本信息</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">类型:</div>
+                        <div class="col-8">${selectedContact.is_group ? '群组' : '好友'}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">微信ID:</div>
+                        <div class="col-8">${selectedContact.wechat_id}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">昵称:</div>
+                        <div class="col-8">${selectedContact.nickname || '无'}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4 text-muted">备注:</div>
+                        <div class="col-8">${selectedContact.remark || '无'}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 text-muted">最后同步:</div>
+                        <div class="col-8">${selectedContact.last_sync_time || '未知'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        contactActions.classList.remove('d-none');
+        
+        // 更新AI回复按钮文本
+        const aiReplyButtonText = document.getElementById('aiReplyButtonText');
+        aiReplyButtonText.textContent = selectedContact.ai_reply_enabled ? '禁用AI回复' : '启用AI回复';
+    }
+    
+    // 过滤联系人
+    function filterContacts(filter) {
+        currentFilter = filter;
+        
+        // 更新按钮状态
+        document.querySelectorAll('.btn-group button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        document.querySelector(`.btn-group button[onclick="filterContacts('${filter}')"]`).classList.add('active');
+        
+        // 重新渲染联系人列表
+        renderContacts();
+    }
+    
+    // 搜索联系人
+    function searchContacts() {
+        searchTerm = document.getElementById('searchInput').value.trim();
+        renderContacts();
+    }
+    
+    // 刷新联系人列表
+    function refreshContacts() {
+        loadContacts();
+    }
+    
+    // 显示发送消息模态框
+    function showSendMessageModal() {
+        if (!selectedContact) return;
+        
+        // 重置表单
+        document.getElementById('messageType').value = 'text';
+        document.getElementById('messageContent').value = '';
+        document.getElementById('imageUpload').value = '';
+        document.getElementById('imagePreview').innerHTML = '';
+        document.getElementById('scheduleMessage').checked = false;
+        document.getElementById('scheduleTime').value = '';
+        
+        // 显示文本输入，隐藏图片输入
+        document.getElementById('textMessageInput').classList.remove('d-none');
+        document.getElementById('imageMessageInput').classList.add('d-none');
+        document.getElementById('scheduleTimeInput').classList.add('d-none');
+        
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+        modal.show();
+    }
+    
+    // 切换消息输入类型
+    function toggleMessageInputType() {
+        const messageType = document.getElementById('messageType').value;
+        
+        if (messageType === 'text') {
+            document.getElementById('textMessageInput').classList.remove('d-none');
+            document.getElementById('imageMessageInput').classList.add('d-none');
+        } else {
+            document.getElementById('textMessageInput').classList.add('d-none');
+            document.getElementById('imageMessageInput').classList.remove('d-none');
+        }
+    }
+    
+    // 切换定时发送输入
+    function toggleScheduleTimeInput() {
+        const scheduleMessage = document.getElementById('scheduleMessage').checked;
+        
+        if (scheduleMessage) {
+            document.getElementById('scheduleTimeInput').classList.remove('d-none');
+        } else {
+            document.getElementById('scheduleTimeInput').classList.add('d-none');
+        }
+    }
+    
+    // 预览图片
+    function previewImage() {
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        if (imageUpload.files && imageUpload.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagePreview.innerHTML = `<img src="${e.target.result}" class="img-fluid" style="max-height: 200px;">`;
+            };
+            
+            reader.readAsDataURL(imageUpload.files[0]);
+        } else {
+            imagePreview.innerHTML = '';
+        }
+    }
+    
+    // 发送消息
+    function sendMessage() {
+        if (!selectedContact) return;
+        
+        const messageType = document.getElementById('messageType').value;
+        let content = '';
+        
+        if (messageType === 'text') {
+            content = document.getElementById('messageContent').value.trim();
+            if (!content) {
+                alert('请输入消息内容');
+                return;
+            }
+        } else {
+            const imageUpload = document.getElementById('imageUpload');
+            if (!imageUpload.files || !imageUpload.files[0]) {
+                alert('请选择图片');
+                return;
+            }
+            
+            // 这里简化处理，实际应该上传图片并获取URL
+            content = URL.createObjectURL(imageUpload.files[0]);
+        }
+        
+        // 处理定时发送
+        let scheduledTime = null;
+        if (document.getElementById('scheduleMessage').checked) {
+            scheduledTime = document.getElementById('scheduleTime').value;
+            if (!scheduledTime) {
+                alert('请选择发送时间');
+                return;
+            }
+        }
+        
+        // 发送消息
+        fetch('/api/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                owner_id: '{{ user.user_id }}',
+                contact_ids: [selectedContact.id],
+                content: content,
+                content_type: messageType,
+                scheduled_time: scheduledTime
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 关闭模态框
+                bootstrap.Modal.getInstance(document.getElementById('sendMessageModal')).hide();
+                
+                // 显示成功提示
+                alert('消息发送成功');
+            } else {
+                alert(data.error || '消息发送失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            alert('消息发送失败，请重试');
+        });
+    }
+    
+    // 切换AI回复
+    function toggleAIReply() {
+        if (!selectedContact) return;
+        
+        const newStatus = !selectedContact.ai_reply_enabled;
+        
+        fetch('/api/set_ai_reply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                owner_id: '{{ user.user_id }}',
+                contact_id: selectedContact.id,
+                ai_reply_enabled: newStatus
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 更新联系人状态
+                selectedContact.ai_reply_enabled = newStatus;
+                
+                // 更新UI
+                const aiReplyButtonText = document.getElementById('aiReplyButtonText');
+                aiReplyButtonText.textContent = newStatus ? '禁用AI回复' : '启用AI回复';
+                
+                // 重新渲染联系人列表
+                renderContacts();
+                
+                // 重新选择当前联系人以更新详情
+                selectContact(selectedContact.id);
+            } else {
+                alert(data.error || '设置AI回复失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error toggling AI reply:', error);
+            alert('设置AI回复失败，请重试');
+        });
+    }
+    
+    // 显示AI策略模态框
+    function showAIStrategyModal() {
+        if (!selectedContact) return;
+        
+        // 加载AI策略列表
+        fetch('/api/ai_strategies')
+            .then(response => response.json())
+            .then(data => {
+                const aiStrategy = document.getElementById('aiStrategy');
+                
+                if (!data.strategies || data.strategies.length === 0) {
+                    aiStrategy.innerHTML = '<option value="">暂无可用策略</option>';
+                    return;
+                }
+                
+                let html = '<option value="">请选择策略</option>';
+                data.strategies.forEach(strategy => {
+                    const selected = selectedContact.ai_strategy_id === strategy.id ? 'selected' : '';
+                    html += `<option value="${strategy.id}" ${selected}>${strategy.name}</option>`;
+                });
+                
+                aiStrategy.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading AI strategies:', error);
+                document.getElementById('aiStrategy').innerHTML = '<option value="">加载策略失败</option>';
+            });
+        
+        // 设置关键词过滤开关
+        document.getElementById('keywordFilterEnabled').checked = selectedContact.keyword_filter_enabled;
+        
+        // 加载关键词列表
+        loadKeywordFilters();
+        
+        // 显示/隐藏关键词列表
+        toggleKeywordFilters();
+        
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('aiStrategyModal'));
+        modal.show();
+    }
+    
+    // 加载关键词列表
+    function loadKeywordFilters() {
+        if (!selectedContact) return;
+        
+        fetch(`/api/keyword_filters?contact_id=${selectedContact.id}`)
+            .then(response => response.json())
+            .then(data => {
+                const keywordList = document.getElementById('keywordList');
+                
+                if (!data.filters || data.filters.length === 0) {
+                    keywordList.innerHTML = '<div class="text-muted">暂无关键词</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.filters.forEach(filter => {
+                    html += `
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" value="${filter.keyword}" readonly>
+                            <button class="btn btn-outline-danger" onclick="deleteKeywordFilter(${filter.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                keywordList.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading keyword filters:', error);
+                document.getElementById('keywordList').innerHTML = '<div class="text-danger">加载关键词失败</div>';
+            });
+    }
+    
+    // 切换关键词过滤
+    function toggleKeywordFilters() {
+        const keywordFilterEnabled = document.getElementById('keywordFilterEnabled').checked;
+        
+        if (keywordFilterEnabled) {
+            document.getElementById('keywordFilters').classList.remove('d-none');
+        } else {
+            document.getElementById('keywordFilters').classList.add('d-none');
+        }
+    }
+    
+    // 添加关键词过滤
+    function addKeywordFilter() {
+        if (!selectedContact) return;
+        
+        const keyword = prompt('请输入关键词');
+        if (!keyword) return;
+        
+        fetch('/api/add_keyword_filter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contact_id: selectedContact.id,
+                keyword: keyword
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 重新加载关键词列表
+                loadKeywordFilters();
+            } else {
+                alert(data.error || '添加关键词失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error adding keyword filter:', error);
+            alert('添加关键词失败，请重试');
+        });
+    }
+    
+    // 删除关键词过滤
+    function deleteKeywordFilter(filterId) {
+        if (!confirm('确定要删除这个关键词吗？')) return;
+        
+        fetch(`/api/delete_keyword_filter/${filterId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 重新加载关键词列表
+                loadKeywordFilters();
+            } else {
+                alert(data.error || '删除关键词失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting keyword filter:', error);
+            alert('删除关键词失败，请重试');
+        });
+    }
+    
+    // 保存AI策略
+    function saveAIStrategy() {
+        if (!selectedContact) return;
+        
+        const aiStrategyId = document.getElementById('aiStrategy').value;
+        const keywordFilterEnabled = document.getElementById('keywordFilterEnabled').checked;
+        
+        fetch('/api/set_ai_reply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                owner_id: '{{ user.user_id }}',
+                contact_id: selectedContact.id,
+                ai_strategy_id: aiStrategyId || null,
+                keyword_filter_enabled: keywordFilterEnabled
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 关闭模态框
+                bootstrap.Modal.getInstance(document.getElementById('aiStrategyModal')).hide();
+                
+                // 更新联系人状态
+                selectedContact.ai_strategy_id = aiStrategyId || null;
+                selectedContact.keyword_filter_enabled = keywordFilterEnabled;
+                
+                // 显示成功提示
+                alert('AI策略设置成功');
+            } else {
+                alert(data.error || 'AI策略设置失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving AI strategy:', error);
+            alert('AI策略设置失败，请重试');
+        });
+    }
+</script>
+{% endblock %}

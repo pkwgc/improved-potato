@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { max-width: 800px; margin-top: 2rem; }
+        .alert { display: none; margin-top: 1rem; }
+        .card { margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-danger { margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">数据库管理</h1>
+
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-danger" id="errorAlert"></div>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">数据库备份</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">创建所选表的备份文件。</p>
+                <button class="btn btn-primary" onclick="createBackup()">创建备份</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">删除表</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">请谨慎操作！删除前会自动创建备份。</p>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" value="users" id="usersCheck">
+                    <label class="form-check-label" for="usersCheck">
+                        用户表 (users)
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" value="recharge_records" id="recordsCheck">
+                    <label class="form-check-label" for="recordsCheck">
+                        充值记录表 (recharge_records)
+                    </label>
+                </div>
+                <button class="btn btn-danger" onclick="deleteTables()">删除选中的表</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showAlert(message, isError = false) {
+            const successAlert = document.getElementById('successAlert');
+            const errorAlert = document.getElementById('errorAlert');
+
+            successAlert.style.display = 'none';
+            errorAlert.style.display = 'none';
+
+            const alert = isError ? errorAlert : successAlert;
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        function getSelectedTables() {
+            const tables = [];
+            if (document.getElementById('usersCheck').checked) tables.push('users');
+            if (document.getElementById('recordsCheck').checked) tables.push('recharge_records');
+            return tables;
+        }
+
+        async function createBackup() {
+            try {
+                const response = await fetch('/admin/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tables: getSelectedTables() })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(`备份创建成功：${data.backup_file}`);
+                } else {
+                    showAlert(data.error, true);
+                }
+            } catch (error) {
+                showAlert('创建备份失败：' + error, true);
+            }
+        }
+
+        async function deleteTables() {
+            const tables = getSelectedTables();
+            if (tables.length === 0) {
+                showAlert('请至少选择一个表', true);
+                return;
+            }
+
+            const confirmation = prompt(
+                `请输入 CONFIRM_DELETE_${tables.join('_')} 以确认删除操作：`,
+                ''
+            );
+
+            try {
+                const response = await fetch('/admin/delete-tables', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Confirm-Operation': confirmation
+                    },
+                    body: JSON.stringify({ tables })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message);
+                } else {
+                    showAlert(data.message, true);
+                }
+            } catch (error) {
+                showAlert('删除表失败：' + error, true);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+{% extends "user_base.html" %}
+
+{% block title %}数据统计与分析{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-bar-chart"></i> 数据统计与分析</h2>
+                <button class="btn btn-primary" onclick="refreshData()">
+                    <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-funnel"></i> 多维度筛选</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="filterForm" method="get">
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <label for="wechat_account" class="form-label">微信账号</label>
+                                        <select class="form-select" id="wechat_account" name="wechat_account">
+                                            <option value="">全部账号</option>
+                                            {% for account in user_wechat_accounts %}
+                                            <option value="{{ account.id }}" {% if request.args.get('wechat_account') == account.id|string %}selected{% endif %}>
+                                                {{ account.nickname or account.wechat_id }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="value_level" class="form-label">价值等级</label>
+                                        <select class="form-select" id="value_level" name="value_level">
+                                            <option value="">全部等级</option>
+                                            <option value="高价值客户" {% if request.args.get('value_level') == '高价值客户' %}selected{% endif %}>高价值客户</option>
+                                            <option value="潜在客户" {% if request.args.get('value_level') == '潜在客户' %}selected{% endif %}>潜在客户</option>
+                                            <option value="低价值客户" {% if request.args.get('value_level') == '低价值客户' %}selected{% endif %}>低价值客户</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="activity_level" class="form-label">活跃度</label>
+                                        <select class="form-select" id="activity_level" name="activity_level">
+                                            <option value="">全部活跃度</option>
+                                            <option value="high" {% if request.args.get('activity_level') == 'high' %}selected{% endif %}>高活跃</option>
+                                            <option value="medium" {% if request.args.get('activity_level') == 'medium' %}selected{% endif %}>中活跃</option>
+                                            <option value="low" {% if request.args.get('activity_level') == 'low' %}selected{% endif %}>低活跃</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="keyword_filter" class="form-label">关键词筛选</label>
+                                        <input type="text" class="form-control" id="keyword_filter" name="keyword_filter"
+                                               value="{{ request.args.get('keyword_filter', '')|e }}" placeholder="输入关键词">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-search"></i> 筛选
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                                                <i class="bi bi-x-circle"></i> 清除
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-pie-chart"></i> 意图分布统计</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if intent_stats %}
+                            <canvas id="intentChart" width="400" height="200"></canvas>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-pie-chart display-1 text-muted"></i>
+                                <h5 class="text-muted mt-3">暂无意图数据</h5>
+                                <p class="text-muted">当系统检测到用户意图时，统计图表将显示在这里</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-people"></i> 用户类型分析</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user_type_stats %}
+                            <canvas id="userTypeChart" width="400" height="200"></canvas>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-people display-1 text-muted"></i>
+                                <h5 class="text-muted mt-3">暂无用户类型数据</h5>
+                                <p class="text-muted">当系统分析用户类型时，统计图表将显示在这里</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if filtered_profiles %}
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-table"></i> 客户画像详情 ({{ filtered_profiles|length }} 条记录)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>客户信息</th>
+                                            <th>价值等级</th>
+                                            <th>活跃度</th>
+                                            <th>最新意图</th>
+                                            <th>微信账号</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for profile in filtered_profiles %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div>
+                                                        <strong>{{ profile.nickname or profile.wechat_id }}</strong>
+                                                        {% if profile.remark %}
+                                                        <br><small class="text-muted">{{ profile.remark|e }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if profile.value_level == '高价值客户' %}
+                                                <span class="badge bg-success">{{ profile.value_level }}</span>
+                                                {% elif profile.value_level == '潜在客户' %}
+                                                <span class="badge bg-warning">{{ profile.value_level }}</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">{{ profile.value_level }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar" role="progressbar"
+                                                         style="width: {{ (profile.activity_score * 100)|round }}%"
+                                                         aria-valuenow="{{ (profile.activity_score * 100)|round }}"
+                                                         aria-valuemin="0" aria-valuemax="100">
+                                                        {{ (profile.activity_score * 100)|round }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if profile.latest_intent %}
+                                                <span class="badge bg-info">{{ profile.latest_intent }}</span>
+                                                {% else %}
+                                                <span class="text-muted">无记录</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ profile.owner_wechat_id }}</small>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">我的微信好友画像</h3>
+                    <div class="card-tools">
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <input type="text" class="form-control" placeholder="搜索微信好友..." id="friendSearchInput">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-default" onclick="searchFriends()">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if user_profiles %}
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="friendProfilesTable">
+                            <thead>
+                                <tr>
+                                    <th>微信好友</th>
+                                    <th>价值等级</th>
+                                    <th>活跃度</th>
+                                    <th>标签</th>
+                                    <th>更新时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for profile, nickname, wechat_id, remark in user_profiles %}
+                                <tr class="friend-profile-row" data-friend-name="{{ remark|default('')|e }}" data-wechat-id="{{ wechat_id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3">
+                                                <i class="bi bi-person-circle fs-4 text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ remark or nickname or wechat_id }}</strong><br>
+                                                <small class="text-muted">微信ID: {{ wechat_id }}</small>
+                                                {% if nickname and remark %}
+                                                    <br><small class="text-info">昵称: {{ nickname|e }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if profile.value_level == '高价值客户' %}success{% elif profile.value_level == '潜力用户' %}warning{% elif profile.value_level == '沉默用户' %}secondary{% elif profile.value_level == '已成交用户' %}primary{% else %}info{% endif %}">
+                                            {{ profile.value_level or '潜在用户' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" style="width: {{ (profile.activity_score * 100) | round(0) if profile.activity_score else 0 }}%">
+                                                {{ (profile.activity_score * 100) | round(0) if profile.activity_score else 0 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if profile.profile_value %}
+                                            {% set profile_data = profile.profile_value | from_json %}
+                                            {% if profile_data.labels %}
+                                                {% for tag in profile_data.labels[:3] %}
+                                                    <span class="badge bg-light me-1">{{ tag }}</span>
+                                                {% endfor %}
+                                                {% if profile_data.labels|length > 3 %}
+                                                    <span class="badge bg-light">+{{ profile_data.labels|length - 3 }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">无标签</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">无标签</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if profile.updated_at %}
+                                            {{ profile.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">未知</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 暂无微信好友画像数据
+                        <br><small>当系统为您的微信好友生成画像后，数据将在此显示</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let intentChart = null;
+let userTypeChart = null;
+
+// 转义HTML字符串防止XSS
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// 防抖函数
+function debounce(func, delay) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+
+    // 初始化搜索输入防抖
+    const searchInput = document.getElementById('friendSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(searchFriends, 300));
+    }
+});
+
+function initializeCharts() {
+    {% if intent_stats %}
+    try {
+        const intentCtx = document.getElementById('intentChart').getContext('2d');
+
+        // 转义意图类型数据
+        const labels = [{% for stat in intent_stats %}'{{ stat.intent_type|e }}'{% if not loop.last %},{% endif %}{% endfor %}];
+        const data = [{% for stat in intent_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+        intentChart = new Chart(intentCtx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('意图图表初始化失败:', error);
+    }
+    {% endif %}
+
+    {% if user_type_stats %}
+    try {
+        const userTypeCtx = document.getElementById('userTypeChart').getContext('2d');
+
+        // 转义用户等级数据
+        const labels = [{% for stat in user_type_stats %}'{{ stat.value_level|e }}'{% if not loop.last %},{% endif %}{% endfor %}];
+        const data = [{% for stat in user_type_stats %}{{ stat.count }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+        userTypeChart = new Chart(userTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#28a745', '#ffc107', '#dc3545', '#17a2b8',
+                        '#6f42c1', '#fd7e14', '#20c997', '#6c757d'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('用户类型图表初始化失败:', error);
+    }
+    {% endif %}
+}
+
+function refreshIntentChart() {
+    fetch('/api/user/intent_distribution')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('网络响应失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (intentChart && data.labels && data.data) {
+                // 转义新数据
+                intentChart.data.labels = data.labels.map(label => escapeHtml(label));
+                intentChart.data.datasets[0].data = data.data;
+                intentChart.update();
+                showNotification('意图分布数据已更新', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('更新失败', 'error');
+        });
+}
+
+function refreshData() {
+    // 使用fetch代替reload实现更优雅的刷新
+    Promise.all([
+        fetch('/api/user/intent_distribution'),
+        fetch('/api/user/type_distribution')
+    ])
+    .then(responses => Promise.all(responses.map(res => res.json())))
+    .then(([intentData, typeData]) => {
+        // 更新意图图表
+        if (intentChart && intentData.labels && intentData.data) {
+            intentChart.data.labels = intentData.labels.map(label => escapeHtml(label));
+            intentChart.data.datasets[0].data = intentData.data;
+        }
+
+        // 更新用户类型图表
+        if (userTypeChart && typeData.labels && typeData.data) {
+            userTypeChart.data.labels = typeData.labels.map(label => escapeHtml(label));
+            userTypeChart.data.datasets[0].data = typeData.data;
+        }
+
+        intentChart?.update();
+        userTypeChart?.update();
+
+        showNotification('数据已更新', 'success');
+    })
+    .catch(error => {
+        console.error('刷新失败:', error);
+        showNotification('刷新失败', 'error');
+    });
+}
+
+function clearFilters() {
+    const form = document.getElementById('filterForm');
+    if (form) {
+        // 重置表单而不触发提交
+        form.reset();
+
+        // 手动清除所有选择框的值
+        const selects = form.querySelectorAll('select');
+        selects.forEach(select => {
+            select.value = '';
+        });
+
+        // 提交表单
+        form.submit();
+    }
+}
+
+function searchFriends() {
+    const searchInput = document.getElementById('friendSearchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+    if (!searchTerm.trim()) {
+        // 搜索为空时显示所有行
+        document.querySelectorAll('.friend-profile-row').forEach(row => {
+            row.style.display = '';
+        });
+        return;
+    }
+
+    const rows = document.querySelectorAll('.friend-profile-row');
+
+    rows.forEach(row => {
+        const friendName = row.getAttribute('data-friend-name').toLowerCase();
+        const wechatId = row.getAttribute('data-wechat-id').toLowerCase();
+
+        if (friendName.includes(searchTerm) || wechatId.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// 替换原有的keypress事件监听器为更健壮的写法
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('friendSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // 阻止默认行为
+                searchFriends();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

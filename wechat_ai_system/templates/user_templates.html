@@ -1,0 +1,156 @@
+{% extends "user_base.html" %}
+
+{% block title %}模板选择 - AI商业化系统{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .template-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+        height: 100%;
+    }
+    .template-card:hover {
+        transform: translateY(-5px);
+    }
+    .template-card.selected {
+        border: 2px solid #4a6baf;
+    }
+    .template-header {
+        background-color: #4a6baf;
+        color: white;
+        padding: 15px;
+        border-radius: 10px 10px 0 0;
+    }
+    .industry-filter {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">模板选择</h1>
+                </div>
+                
+                <div id="alertContainer"></div>
+                
+                <div class="industry-filter">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" onclick="filterTemplates('all')">全部</button>
+                        {% for industry in industries %}
+                        <button type="button" class="btn btn-outline-primary" onclick="filterTemplates('{{ industry.id }}')">{{ industry.name }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="templatesContainer">
+                    {% for template in templates %}
+                    <div class="col template-item" data-industry="{{ template.industry_id or 'none' }}">
+                        <div class="card template-card {% if template.id == current_template_id %}selected{% endif %}">
+                            <div class="template-header">
+                                <h5 class="card-title">{{ template.name }}</h5>
+                                {% if template.industry %}
+                                <span class="badge bg-light text-dark">{{ template.industry.name }}</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">通用</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button class="btn btn-primary btn-sm" onclick="bindTemplate({{ template.id }}, '{{ template.name }}')">
+                                        {% if template.id == current_template_id %}
+                                        <i class="bi bi-check-circle-fill"></i> 当前使用
+                                        {% else %}
+                                        <i class="bi bi-check-circle"></i> 选择此模板
+                                        {% endif %}
+                                    </button>
+                                    <small class="text-muted">创建于 {{ template.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+        function bindTemplate(templateId, templateName) {
+            fetch('/user/bind_template', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `template_id=${templateId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 更新UI
+                    document.querySelectorAll('.template-card').forEach(card => {
+                        card.classList.remove('selected');
+                    });
+                    
+                    document.querySelectorAll('.template-card button').forEach(button => {
+                        button.innerHTML = '<i class="bi bi-check-circle"></i> 选择此模板';
+                    });
+                    
+                    const selectedCard = document.querySelector(`.template-item[data-template="${templateId}"] .template-card`);
+                    if (selectedCard) {
+                        selectedCard.classList.add('selected');
+                        selectedCard.querySelector('button').innerHTML = '<i class="bi bi-check-circle-fill"></i> 当前使用';
+                    }
+                    
+                    // 显示成功消息
+                    showAlert('success', `成功绑定模板: ${templateName}`);
+                } else {
+                    showAlert('danger', data.error || '绑定模板失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', '绑定模板时发生错误');
+            });
+        }
+        
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+            
+            // 5秒后自动关闭
+            setTimeout(() => {
+                const bsAlert = new bootstrap.Alert(alertDiv);
+                bsAlert.close();
+            }, 5000);
+        }
+        
+        function filterTemplates(industryId) {
+            // 更新按钮状态
+            document.querySelectorAll('.industry-filter .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 过滤模板
+            const templates = document.querySelectorAll('.template-item');
+            templates.forEach(template => {
+                if (industryId === 'all' || template.dataset.industry === industryId || (industryId === 'none' && template.dataset.industry === 'none')) {
+                    template.style.display = 'block';
+                } else {
+                    template.style.display = 'none';
+                }
+            });
+        }
+    </script>
+{% endblock %}

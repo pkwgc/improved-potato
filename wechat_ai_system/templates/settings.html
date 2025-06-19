@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>系统设置 - AI商业化系统</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">AI商业化系统</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="{{ url_for('admin_logout') }}">退出登录</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="sidebar-sticky">
+								{% set is_admin = True %}
+                {% include 'sidebar.html' %}
+                </div>
+            </nav>
+            
+            <main class="main-content col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">系统设置</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="saveAllSettings()">
+                            <i class="bi bi-save"></i> 保存所有设置
+                        </button>
+                    </div>
+                </div>
+                
+                {% if message %}
+                <div class="alert alert-{{ message_type }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- API设置 -->
+                        <div class="card settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-key"></i> API设置
+                            </div>
+                            <div class="card-body">
+                                <form id="apiSettingsForm" method="POST" action="{{ url_for('admin_update_api_settings') }}">
+                                    <div class="mb-3">
+                                        <label for="deepseek_api_key" class="form-label">DeepSeek API密钥</label>
+                                        <input type="password" class="form-control" id="deepseek_api_key" name="deepseek_api_key" value="{{ settings.get('DEEPSEEK_API_KEY', '') }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deepseek_api_url" class="form-label">DeepSeek API地址</label>
+                                        <input type="text" class="form-control" id="deepseek_api_url" name="deepseek_api_url" value="{{ settings.get('DEEPSEEK_API_URL', 'https://api.deepseek.com') }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deepseek_model" class="form-label">DeepSeek模型</label>
+                                        <input type="text" class="form-control" id="deepseek_model" name="deepseek_model" value="{{ settings.get('DEEPSEEK_MODEL', 'deepseek-chat') }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">保存API设置</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- AI设置 -->
+                        <div class="card settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-robot"></i> AI设置
+                            </div>
+                            <div class="card-body">
+                                <form id="aiSettingsForm" method="POST" action="{{ url_for('admin_update_ai_settings') }}">
+                                    <div class="mb-3">
+                                        <label for="max_tokens" class="form-label">最大Token数</label>
+                                        <input type="number" class="form-control" id="max_tokens" name="max_tokens" value="{{ settings.get('MAX_TOKENS', 1024) }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="temperature" class="form-label">温度 (0.0-1.0)</label>
+                                        <input type="range" class="form-range" id="temperature" name="temperature" min="0" max="1" step="0.1" value="{{ settings.get('TEMPERATURE', 0.7) }}">
+                                        <div class="text-center" id="temperatureValue">{{ settings.get('TEMPERATURE', 0.7) }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="max_context_length" class="form-label">最大上下文长度</label>
+                                        <input type="number" class="form-control" id="max_context_length" name="max_context_length" value="{{ settings.get('MAX_CONTEXT_LENGTH', 50) }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">保存AI设置</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <!-- 安全设置 -->
+                        <div class="card settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-shield-lock"></i> 安全设置
+                            </div>
+                            <div class="card-body">
+                                <form id="securitySettingsForm" method="POST" action="{{ url_for('admin_update_security_settings') }}">
+                                    <div class="mb-3">
+                                        <label for="rate_limit" class="form-label">全局速率限制 (每分钟请求数)</label>
+                                        <input type="number" class="form-control" id="rate_limit" name="rate_limit" value="{{ settings.get('RATE_LIMIT_PER_MINUTE', 60) }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="user_rate_limit" class="form-label">用户速率限制 (每用户每分钟请求数)</label>
+                                        <input type="number" class="form-control" id="user_rate_limit" name="user_rate_limit" value="{{ settings.get('USER_RATE_LIMIT_PER_MINUTE', 60) }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="max_daily_requests" class="form-label">用户每日最大请求数</label>
+                                        <input type="number" class="form-control" id="max_daily_requests" name="max_daily_requests" value="{{ settings.get('MAX_DAILY_REQUESTS_PER_USER', 1000) }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="max_request_size" class="form-label">用户消息最大字符数</label>
+                                        <input type="number" class="form-control" id="max_request_size" name="max_request_size" value="{{ settings.get('MAX_REQUEST_SIZE', 4096) }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="max_connection_time" class="form-label">单次连接最大时间（分钟）</label>
+                                        <input type="number" class="form-control" id="max_connection_time" name="max_connection_time" value="{{ settings.get('MAX_CONNECTION_TIME', 30) }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="connection_timeout" class="form-label">连接超时时间（秒）</label>
+                                        <input type="number" class="form-control" id="connection_timeout" name="connection_timeout" value="{{ settings.get('CONNECTION_TIMEOUT', 60) }}">
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="enable_user_specific_limits" name="enable_user_specific_limits" {% if settings.get('ENABLE_USER_SPECIFIC_LIMITS', False) %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_user_specific_limits">启用用户特定限制</label>
+                                        <small class="form-text text-muted d-block">如果启用，系统将应用用户特定的限制而不是全局限制</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="ip_whitelist" class="form-label">IP白名单 (每行一个IP)</label>
+                                        <textarea class="form-control" id="ip_whitelist" name="ip_whitelist" rows="3">{{ ip_whitelist|join('\n') }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="ip_blacklist" class="form-label">IP黑名单 (每行一个IP)</label>
+                                        <textarea class="form-control" id="ip_blacklist" name="ip_blacklist" rows="3">{{ ip_blacklist|join('\n') }}</textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">保存安全设置</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 聊天记录设置 -->
+                        <div class="card settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-chat-dots"></i> 聊天记录设置
+                            </div>
+                            <div class="card-body">
+                                <form id="chatSettingsForm" method="POST" action="{{ url_for('admin_update_chat_settings') }}">
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="enable_json_storage" name="enable_json_storage" {% if chat_settings.get('ENABLE_JSON_STORAGE', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_json_storage">启用JSON存储聊天记录</label>
+                                        <small class="form-text text-muted d-block">将聊天记录保存为JSON文件，便于查看和备份</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="chat_storage_dir" class="form-label">聊天记录存储目录</label>
+                                        <input type="text" class="form-control" id="chat_storage_dir" name="chat_storage_dir" value="{{ chat_settings.get('CHAT_STORAGE_DIR', 'chat_records') }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="max_context_messages" class="form-label">AI请求最大上下文消息数</label>
+                                        <input type="number" class="form-control" id="max_context_messages" name="max_context_messages" value="{{ chat_settings.get('MAX_CONTEXT_MESSAGES', 10) }}" min="1">
+                                        <small class="form-text text-muted">AI请求时使用的最大历史消息数量，影响AI回复的上下文理解</small>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="sync_db_with_json" name="sync_db_with_json" {% if chat_settings.get('SYNC_DB_WITH_JSON', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="sync_db_with_json">同步数据库和JSON文件</label>
+                                        <small class="form-text text-muted d-block">当从JSON文件读取消息时，自动同步到数据库</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="chat_active_minutes" class="form-label">聊天活跃状态时间窗口（分钟）</label>
+                                        <input type="number" class="form-control" id="chat_active_minutes" name="chat_active_minutes" value="{{ chat_settings.get('CHAT_ACTIVE_MINUTES', 30) }}" min="1">
+                                        <small class="form-text text-muted">判断用户是否在聊天状态的时间窗口，影响问候功能的触发条件</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="greeting_context_messages" class="form-label">问候功能检查的上下文消息数量</label>
+                                        <input type="number" class="form-control" id="greeting_context_messages" name="greeting_context_messages" value="{{ chat_settings.get('GREETING_CONTEXT_MESSAGES', 5) }}" min="1">
+                                        <small class="form-text text-muted">问候功能检查的最近消息数量，用于判断用户是否处于聊天状态</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">保存聊天记录设置</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 自动问候设置 -->
+                        <div class="card settings-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">自动问候设置</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="greetingSettingsForm" method="POST" action="{{ url_for('admin_update_greeting_settings') }}">
+                                    <div class="mb-3">
+                                        <label for="auto_message" class="form-label">自动问候消息内容</label>
+                                        <textarea class="form-control" id="auto_message" name="auto_message" rows="3">{{ greeting_settings.get('AUTO_MESSAGE', '请你模拟系统设置的角色，在微信上找对方发消息想知道对方在做什么') }}</textarea>
+                                        <small class="form-text text-muted">设置自动问候时发送的消息内容</small>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="enable_auto_message" name="enable_auto_message" {% if greeting_settings.get('ENABLE_AUTO_MESSAGE', True) %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_auto_message">启用自动问候</label>
+                                        <small class="form-text text-muted d-block">开启或关闭自动问候功能</small>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="min_countdown_hours" class="form-label">最小倒计时小时数</label>
+                                                <input type="number" class="form-control" id="min_countdown_hours" name="min_countdown_hours" value="{{ greeting_settings.get('MIN_COUNTDOWN_HOURS', 1) }}" min="0" step="0.5">
+                                                <small class="form-text text-muted">自动问候的最小等待时间（小时）</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="max_countdown_hours" class="form-label">最大倒计时小时数</label>
+                                                <input type="number" class="form-control" id="max_countdown_hours" name="max_countdown_hours" value="{{ greeting_settings.get('MAX_COUNTDOWN_HOURS', 2) }}" min="0" step="0.5">
+                                                <small class="form-text text-muted">自动问候的最大等待时间（小时）</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h5 class="mt-4 mb-3">中午休息时间</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="noon_quiet_time_start" class="form-label">中午休息开始</label>
+                                                <input type="time" class="form-control" id="noon_quiet_time_start" name="noon_quiet_time_start" value="{{ greeting_settings.get('NOON_QUIET_TIME_START', '11:30') }}">
+                                                <small class="form-text text-muted">中午休息时间开始，此时间段内不发送自动问候</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="noon_quiet_time_end" class="form-label">中午休息结束</label>
+                                                <input type="time" class="form-control" id="noon_quiet_time_end" name="noon_quiet_time_end" value="{{ greeting_settings.get('NOON_QUIET_TIME_END', '13:30') }}">
+                                                <small class="form-text text-muted">中午休息时间结束</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <h5 class="mt-4 mb-3">晚上休息时间</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="evening_quiet_time_start" class="form-label">晚上休息开始</label>
+                                                <input type="time" class="form-control" id="evening_quiet_time_start" name="evening_quiet_time_start" value="{{ greeting_settings.get('EVENING_QUIET_TIME_START', '22:00') }}">
+                                                <small class="form-text text-muted">晚上休息时间开始，此时间段内不发送自动问候</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="evening_quiet_time_end" class="form-label">晚上休息结束</label>
+                                                <input type="time" class="form-control" id="evening_quiet_time_end" name="evening_quiet_time_end" value="{{ greeting_settings.get('EVENING_QUIET_TIME_END', '07:00') }}">
+                                                <small class="form-text text-muted">晚上休息时间结束</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">保存问候设置</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 管理员设置 -->
+                        <div class="card settings-card">
+                            <div class="card-header">
+                                <i class="bi bi-person-lock"></i> 管理员设置
+                            </div>
+                            <div class="card-body">
+                                <form id="adminSettingsForm" method="POST" action="{{ url_for('admin_update_admin_settings') }}">
+                                    <div class="mb-3">
+                                        <label for="admin_username" class="form-label">管理员用户名</label>
+                                        <input type="text" class="form-control" id="admin_username" name="admin_username" value="{{ admin.username }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="admin_password" class="form-label">管理员密码</label>
+                                        <input type="password" class="form-control" id="admin_password" name="admin_password" placeholder="输入新密码以更改">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="admin_password_confirm" class="form-label">确认密码</label>
+                                        <input type="password" class="form-control" id="admin_password_confirm" name="admin_password_confirm" placeholder="再次输入新密码">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">保存管理员设置</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统状态 -->
+                <div class="card settings-card mt-4">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle"></i> 系统状态
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>数据库状态</h5>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td>数据库类型</td>
+                                            <td>MySQL</td>
+                                        </tr>
+                                        <tr>
+                                            <td>数据库连接</td>
+                                            <td>
+                                                {% if db_status %}
+                                                <span class="badge bg-success">正常</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">异常</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>用户数量</td>
+                                            <td>{{ user_count }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>模板数量</td>
+                                            <td>{{ template_count }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>API状态</h5>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td>DeepSeek API</td>
+                                            <td>
+                                                {% if api_status %}
+                                                <span class="badge bg-success">正常</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">异常</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>今日API调用</td>
+                                            <td>{{ today_api_calls }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>本月API调用</td>
+                                            <td>{{ month_api_calls }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>本月Token消耗</td>
+                                            <td>{{ month_token_usage }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 系统资源使用图表 -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h5>系统资源使用</h5>
+                                <canvas id="resourceUsageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 温度滑块值显示
+        document.getElementById('temperature').addEventListener('input', function() {
+            document.getElementById('temperatureValue').textContent = this.value;
+        });
+        
+        // 保存所有设置
+        function saveAllSettings() {
+            if (confirm('确定要保存所有设置吗？')) {
+                document.getElementById('apiSettingsForm').submit();
+                document.getElementById('aiSettingsForm').submit();
+                document.getElementById('securitySettingsForm').submit();
+                document.getElementById('chatSettingsForm').submit();
+                document.getElementById('adminSettingsForm').submit();
+            }
+        }
+        
+        // 系统资源使用图表
+        const resourceUsageCtx = document.getElementById('resourceUsageChart').getContext('2d');
+        const resourceUsageChart = new Chart(resourceUsageCtx, {
+            type: 'line',
+            data: {
+                labels: {{ resource_timestamps|safe }},
+                datasets: [
+                    {
+                        label: 'CPU使用率 (%)',
+                        data: {{ cpu_usage|safe }},
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: '内存使用率 (%)',
+                        data: {{ memory_usage|safe }},
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: '磁盘使用率 (%)',
+                        data: {{ disk_usage|safe }},
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '系统资源使用趋势'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

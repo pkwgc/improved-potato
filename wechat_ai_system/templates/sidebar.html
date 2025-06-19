@@ -1,0 +1,177 @@
+    {% if is_admin %}
+    <!-- 管理员菜单项 -->
+	                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> 首页
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_users') %}active{% endif %}" href="{{ url_for('admin_users') }}">
+                                <i class="bi bi-people"></i> 用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_templates') %}active{% endif %}" href="{{ url_for('admin_templates') }}">
+                                <i class="bi bi-file-earmark-text"></i> 模板管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_token_packages') %}active{% endif %}" href="{{ url_for('admin_token_packages') }}">
+                                <i class="bi bi-credit-card"></i> 套餐管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_billing') %}active{% endif %}" href="{{ url_for('admin_billing') }}">
+                                <i class="bi bi-credit-card"></i> 计费管理
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_chat_history') %}active{% endif %}" href="{{ url_for('admin_chat_history') }}">
+                                <i class="bi bi-chat-dots"></i> 聊天记录
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_customer_profiling') %}active{% endif %}" href="{{ url_for('admin_customer_profiling') }}">
+                                <i class="bi bi-person-badge"></i> 客户好友画像统计
+                            </a>
+                        </li>
+						<li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_ai_profiling') %}active{% endif %}" href="{{ url_for('admin_ai_profiling') }}">
+                                <i class="bi bi-person-badge"></i> 朋友圈AI画像
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_intent_statistics') %}active{% endif %}" href="{{ url_for('admin_intent_statistics') }}">
+                                <i class="bi bi-graph-up"></i> 意向统计
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_proactive_tracking') %}active{% endif %}" href="{{ url_for('admin_proactive_tracking') }}">
+                                <i class="bi bi-send-check"></i> 智能跟踪
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_personalized_prompt') %}active{% endif %}" href="{{ url_for('admin_personalized_prompt') }}">
+                                <i class="bi bi-magic"></i> 个性化提示词
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_settings') %}active{% endif %}" href="{{ url_for('admin_settings') }}">
+                                <i class="bi bi-gear"></i> 系统设置
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_inventory') %}active{% endif %}" href="{{ url_for('admin_inventory') }}">
+                                <i class="bi bi-box-seam"></i> 库存管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_order_management') %}active{% endif %}" href="{{ url_for('admin_order_management') }}">
+                                <i class="bi bi-cart"></i> 订单管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_sales_statistics') %}active{% endif %}" href="{{ url_for('admin_sales_statistics') }}">
+                                <i class="bi bi-graph-up"></i> 销售统计
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('admin_contacts') %}active{% endif %}" href="{{ url_for('admin_contacts') }}">
+                                <i class="bi bi-people"></i> 联系人管理
+                            </a>
+                        </li>
+                    </ul>
+    {% else %}
+    <!-- 用户菜单项 -->
+	                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_dashboard') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> 首页
+                            </a>
+                        </li>
+                            <!--
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_chat_history') %}active{% endif %}" href="{{ url_for('user_chat_history') }}">
+                                <i class="bi bi-chat-dots"></i> 聊天记录
+                            </a>
+                        </li>
+                        -->
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_token_packages') %}active{% endif %}" href="{{ url_for('user_token_packages') }}">
+                                <i class="bi bi-box"></i> 购买套餐
+                            </a>
+                        </li>
+                            <!--
+                                                    <li class="nav-item">
+                                                        <a class="nav-link {% if request.path == url_for('user_templates') %}active{% endif %}" href="{{ url_for('user_templates') }}">
+                                                            <i class="bi bi-person"></i> 模板选择
+                                                        </a>
+                                                    </li>
+													-->
+                                                    <li class="nav-item">
+                                                        <a class="nav-link {% if request.path == url_for('user_inventory') %}active{% endif %}" href="{{ url_for('user_inventory') }}">
+                                                            <i class="bi bi-box-seam"></i> 库存管理
+                                                        </a>
+                                                    </li>
+													
+<!--
+                                                    <li class="nav-item">
+                                                        <a class="nav-link {% if request.path == url_for('user_orders') %}active{% endif %}" href="{{ url_for('user_orders') }}">
+                                                            <i class="bi bi-cart"></i> 订单管理
+                                                        </a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link {% if request.path == url_for('user_sales') %}active{% endif %}" href="{{ url_for('user_sales') }}">
+                                                            <i class="bi bi-graph-up"></i> 销售统计
+                                                        </a>
+                                                    </li>
+                                                    -->
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_contacts') %}active{% endif %}" href="{{ url_for('user_contacts') }}">
+                                <i class="bi bi-chat-dots"></i> 微信管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_customer_management') %}active{% endif %}" href="{{ url_for('user_customer_management') }}">
+                                <i class="bi bi-person-badge"></i> 客户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_proactive_tracking') %}active{% endif %}" href="{{ url_for('user_proactive_tracking') }}">
+                                <i class="bi bi-graph-up-arrow"></i> 主动跟踪管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_instruction_approval') %}active{% endif %}" href="{{ url_for('user_instruction_approval') }}">
+                                <i class="bi bi-check-circle"></i> 指令审批中心
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_knowledge_management') %}active{% endif %}" href="{{ url_for('user_knowledge_management') }}">
+                                <i class="bi bi-database"></i> 知识库管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_data_analytics') %}active{% endif %}" href="{{ url_for('user_data_analytics') }}">
+                                <i class="bi bi-bar-chart"></i> 数据统计分析
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_moments') %}active{% endif %}" href="{{ url_for('user_moments') }}">
+                                <i class="bi bi-camera"></i> 朋友圈管理
+                            </a>
+                        </li>
+						<li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_profile') %}active{% endif %}" href="{{ url_for('user_profile') }}">
+                                <i class="bi bi-person"></i> 个人信息
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('user_logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> 退出登录
+                            </a>
+                        </li>
+                    </ul>
+    {% endif %}

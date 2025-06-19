@@ -1,0 +1,27 @@
+/* 
+ * 加载状态CSS
+ * 用于在发送消息时禁用UI交互，防止重复点击和操作
+ */
+
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.5);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* 保持特定元素可点击，如刷新按钮和联系人选择 */
+.loading .refresh-btn,
+.loading .contact-item {
+    pointer-events: auto;
+}
