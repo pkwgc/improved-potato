@@ -34,27 +34,15 @@ def create_test_users():
         
         existing_admin = db.query(User).filter(User.user_id == 'admin').first()
         if existing_admin:
-            print('Admin user already exists, updating password...')
-            existing_admin.password = hash_password('admin123')
-            existing_admin.is_admin = True
-        else:
-            print('Creating admin test user...')
-            admin_user = User(
-                user_id='admin',
-                username='Administrator',
-                password=hash_password('admin123'),
-                is_admin=True,
-                token_limit=0,
-                has_appointment=False
-            )
-            db.add(admin_user)
+            print('Removing admin user from database to avoid conflicts with hardcoded admin login...')
+            db.delete(existing_admin)
         
         db.commit()
         db.close()
         
         print('Test users created successfully!')
         print('Test user: testuser / testpass123')
-        print('Admin user: admin / admin123')
+        print('Admin login uses hardcoded credentials: admin / admin123')
         
     except Exception as e:
         print(f'Error creating test users: {str(e)}')

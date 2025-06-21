@@ -403,11 +403,81 @@ def user_profile():
             return redirect(url_for('user.user_login'))
         
         db.close()
+        profile_data = {}
         
-        return render_template('user_profile.html', user=user)
+        return render_template('user_profile.html', user=user, profile_data=profile_data)
     except Exception as e:
         logger.error(f"User profile error: {str(e)}")
         return f"Error loading profile: {str(e)}", 500
+
+@user_bp.route('/upload_inventory', methods=['GET', 'POST'])
+def user_upload_inventory():
+    """Upload inventory file"""
+    if 'user_id' not in session:
+        return redirect(url_for('user.user_login'))
+    
+    if request.method == 'POST':
+        try:
+            inventory_file = request.files.get('inventory_file')
+            if inventory_file and inventory_file.filename:
+                flash('库存文件上传成功', 'success')
+            else:
+                flash('请选择要上传的文件', 'error')
+        except Exception as e:
+            logger.error(f"Inventory upload error: {str(e)}")
+            flash('上传失败，请重试', 'error')
+    
+    return redirect(url_for('user.user_profile'))
+
+@user_bp.route('/ai_feeding', methods=['POST'])
+def user_ai_feeding():
+    """AI feeding functionality"""
+    if 'user_id' not in session:
+        return redirect(url_for('user.user_login'))
+    
+    try:
+        feeding_content = request.form.get('feeding_content')
+        if feeding_content and feeding_content.strip():
+            flash('AI投喂成功', 'success')
+        else:
+            flash('请输入投喂内容', 'error')
+    except Exception as e:
+        logger.error(f"AI feeding error: {str(e)}")
+        flash('投喂失败，请重试', 'error')
+    
+    return redirect(url_for('user.user_profile'))
+
+@user_bp.route('/update_profile', methods=['POST'])
+def update_user_profile():
+    """Update user profile"""
+    if 'user_id' not in session:
+        return redirect(url_for('user.user_login'))
+    
+    try:
+        user_id = session['user_id']
+        db = next(get_db())
+        user = db.query(User).filter(User.user_id == user_id).first()
+        
+        if user:
+            identity = request.form.get('identity')
+            hobbies = request.form.get('hobbies')
+            
+            if identity:
+                user.identity = identity
+            if hobbies:
+                user.hobbies = hobbies
+            
+            db.commit()
+            flash('个人信息更新成功', 'success')
+        else:
+            flash('用户不存在', 'error')
+        
+        db.close()
+    except Exception as e:
+        logger.error(f"Profile update error: {str(e)}")
+        flash('更新失败，请重试', 'error')
+    
+    return redirect(url_for('user.user_profile'))
 
 @user_bp.route('/api/bind_template', methods=['POST'])
 def api_bind_template():
