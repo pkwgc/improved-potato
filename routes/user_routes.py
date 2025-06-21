@@ -41,19 +41,32 @@ def user_login():
             
             logger.info(f"Login attempt for user_id: {user_id}")
             logger.info(f"User found: {user is not None}")
+            
             if user:
                 logger.info(f"User has password: {user.password is not None}")
-                logger.info(f"Password verification: {verify_password(password, user.password) if user.password else 'No password set'}")
-            
-            if user and user.password and verify_password(password, user.password):
-                session['user_id'] = user_id
-                session['username'] = user.username
-                db.close()
-                logger.info(f"Login successful for user: {user_id}")
-                return redirect(url_for('user.user_dashboard'))
+                if user.password:
+                    logger.info(f"Password hash format: {user.password[:20]}...")
+                    verification_result = verify_password(password, user.password)
+                    logger.info(f"Password verification result: {verification_result}")
+                    logger.info(f"verify_password function: {verify_password.__module__}.{verify_password.__name__}")
+                    
+                    if verification_result:
+                        session['user_id'] = user_id
+                        session['username'] = user.username
+                        logger.info(f"Login successful for user: {user_id}")
+                        db.close()
+                        return redirect(url_for('user.user_dashboard'))
+                    else:
+                        logger.info(f"Password verification failed for user: {user_id}")
+                        flash('Invalid user ID or password')
+                        db.close()
+                else:
+                    logger.info(f"User {user_id} has no password set")
+                    flash('Invalid user ID or password')
+                    db.close()
             else:
+                logger.info(f"User not found: {user_id}")
                 flash('Invalid user ID or password')
-                logger.info(f"Login failed for user: {user_id}")
                 db.close()
         except Exception as e:
             logger.error(f"User login error: {str(e)}")
