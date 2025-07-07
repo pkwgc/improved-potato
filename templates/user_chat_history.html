@@ -157,7 +157,7 @@
                                 <ul class="pagination justify-content-center">
                                     {% if page > 1 %}
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ url_for('user_chat_history', page=page-1) }}" aria-label="上一页">
+                                            <a class="page-link" href="{{ url_for('user.user_chat_history', page=page-1) }}" aria-label="上一页">
                                                 <span aria-hidden="true">&laquo;</span>
                                             </a>
                                         </li>
@@ -170,7 +170,7 @@
                                             </li>
                                         {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
                                             <li class="page-item">
-                                                <a class="page-link" href="{{ url_for('user_chat_history', page=p) }}">{{ p }}</a>
+                                                <a class="page-link" href="{{ url_for('user.user_chat_history', page=p) }}">{{ p }}</a>
                                             </li>
                                         {% elif p == page - 3 or p == page + 3 %}
                                             <li class="page-item disabled">
@@ -181,7 +181,7 @@
                                     
                                     {% if page < total_pages %}
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ url_for('user_chat_history', page=page+1) }}" aria-label="下一页">
+                                            <a class="page-link" href="{{ url_for('user.user_chat_history', page=page+1) }}" aria-label="下一页">
                                                 <span aria-hidden="true">&raquo;</span>
                                             </a>
                                         </li>
@@ -194,7 +194,7 @@
                                 <i class="bi bi-chat-dots text-muted" style="font-size: 3rem;"></i>
                                 <p class="text-muted mt-3">暂无聊天记录</p>
                                 {% if not search_term %}
-                                <a href="{{ url_for('user_contacts') }}" class="btn btn-primary">
+                                <a href="{{ url_for('user.user_contacts') }}" class="btn btn-primary">
                                     <i class="bi bi-plus"></i> 开始聊天
                                 </a>
                                 {% endif %}
@@ -262,7 +262,7 @@
         }
         
         function exportChatHistory() {
-            window.location.href = "{{ url_for('user_chat_history', export=1) }}";
+            window.location.href = "{{ url_for('user.user_chat_history', export=1) }}";
         }
         
         function clearChatHistory() {
@@ -271,14 +271,14 @@
         }
         
         function confirmClearHistory() {
-            window.location.href = "{{ url_for('user_dashboard') }}";
+            window.location.href = "{{ url_for('user.user_dashboard') }}";
         }
         
         function searchChatHistory() {
             const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
             if (!searchTerm) return;
             
-            window.location.href = "{{ url_for('user_chat_history') }}?search=" + encodeURIComponent(searchTerm);
+            window.location.href = "{{ url_for('user.user_chat_history') }}?search=" + encodeURIComponent(searchTerm);
         }
         
         document.getElementById('searchInput').addEventListener('keypress', function(e) {

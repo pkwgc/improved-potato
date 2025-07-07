@@ -7,6 +7,9 @@
     <h1 class="h2">客户画像管理</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                <i class="bi bi-plus"></i> 新增画像
+            </button>
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
                 <i class="bi bi-arrow-clockwise"></i> 刷新数据
             </button>
@@ -64,29 +67,30 @@
                 <label for="valueLevel" class="form-label">价值等级</label>
                 <select class="form-select" id="valueLevel" name="value_level">
                     <option value="">全部</option>
-                    <option value="高价值">高价值</option>
-                    <option value="中价值">中价值</option>
-                    <option value="普通">普通</option>
-                    <option value="低价值">低价值</option>
+                    <option value="高价值客户" {% if current_filters and current_filters.value_level == '高价值客户' %}selected{% endif %}>高价值客户</option>
+                    <option value="潜力用户" {% if current_filters and current_filters.value_level == '潜力用户' %}selected{% endif %}>潜力用户</option>
+                    <option value="沉默用户" {% if current_filters and current_filters.value_level == '沉默用户' %}selected{% endif %}>沉默用户</option>
+                    <option value="已成交用户" {% if current_filters and current_filters.value_level == '已成交用户' %}selected{% endif %}>已成交用户</option>
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="activityRange" class="form-label">活跃度范围</label>
-                <select class="form-select" id="activityRange" name="activity_range">
-                    <option value="">全部</option>
-                    <option value="80-100">高活跃 (80-100)</option>
-                    <option value="60-79">中活跃 (60-79)</option>
-                    <option value="40-59">低活跃 (40-59)</option>
-                    <option value="0-39">不活跃 (0-39)</option>
-                </select>
+                <label class="form-label">活跃度范围</label>
+                <div class="row">
+                    <div class="col-6">
+                        <input type="number" class="form-control" name="activity_min" placeholder="最小%" min="0" max="100" value="{{ current_filters.activity_min if current_filters else '' }}">
+                    </div>
+                    <div class="col-6">
+                        <input type="number" class="form-control" name="activity_max" placeholder="最大%" min="0" max="100" value="{{ current_filters.activity_max if current_filters else '' }}">
+                    </div>
+                </div>
             </div>
             <div class="col-md-3">
                 <label for="tagFilter" class="form-label">标签筛选</label>
-                <input type="text" class="form-control" id="tagFilter" name="tag_filter" placeholder="输入标签关键词">
+                <input type="text" class="form-control" id="tagFilter" name="tag_filter" placeholder="输入标签关键词" value="{{ current_filters.tag_filter if current_filters else '' }}">
             </div>
             <div class="col-md-3">
                 <label for="searchKeyword" class="form-label">搜索关键词</label>
-                <input type="text" class="form-control" id="searchKeyword" name="search" placeholder="客户名称或微信ID">
+                <input type="text" class="form-control" id="searchKeyword" name="search_keyword" placeholder="客户名称或微信ID" value="{{ current_filters.search_keyword if current_filters else '' }}">
             </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-primary">
@@ -110,12 +114,12 @@
             <table class="table table-striped" id="customersTable">
                 <thead>
                     <tr>
-                        <th>客户信息</th>
+                        <th>系统用户账号</th>
+                        <th>微信好友信息</th>
                         <th>价值等级</th>
                         <th>活跃度</th>
                         <th>标签</th>
-                        <th>最近活动</th>
-                        <th>转化率</th>
+                        <th>创建时间</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -128,13 +132,27 @@
                                     <i class="bi bi-person-circle fs-4"></i>
                                 </div>
                                 <div>
-                                    <strong>{{ customer.username }}</strong><br>
-                                    <small class="text-muted">{{ customer.user_id }}</small>
+                                    <strong>{{ customer.system_username }}</strong><br>
+                                    <small class="text-muted">{{ customer.system_user_id }}</small>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-{% if customer.value_level == '高价值' %}success{% elif customer.value_level == '中价值' %}info{% elif customer.value_level == '普通' %}secondary{% else %}warning{% endif %}">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-3">
+                                    <i class="bi bi-chat-dots fs-4 text-success"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ customer.wechat_remark or customer.wechat_nickname or customer.wechat_id }}</strong><br>
+                                    <small class="text-muted">微信ID: {{ customer.wechat_id }}</small>
+                                    {% if customer.wechat_nickname and customer.wechat_remark %}
+                                        <br><small class="text-info">昵称: {{ customer.wechat_nickname }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if customer.value_level == '高价值客户' %}success{% elif customer.value_level == '中价值' %}info{% elif customer.value_level == '普通' %}secondary{% else %}warning{% endif %}">
                                 {{ customer.value_level }}
                             </span>
                         </td>
@@ -159,19 +177,18 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if customer.last_active_time %}
-                                {{ customer.last_active_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% if customer.created_at %}
+                                {{ customer.created_at.strftime('%Y-%m-%d %H:%M') }}
                             {% else %}
-                                <span class="text-muted">从未活动</span>
+                                <span class="text-muted">未知</span>
                             {% endif %}
                         </td>
-                        <td>{{ (customer.conversion_rate * 100) | round(1) }}%</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="editCustomer({{ customer.id }})">
                                 <i class="bi bi-pencil"></i> 编辑
                             </button>
-                            <button class="btn btn-sm btn-outline-info" onclick="viewProfile({{ customer.id }})">
-                                <i class="bi bi-eye"></i> 详情
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer({{ customer.id }}, '{{ customer.wechat_remark or customer.wechat_nickname or customer.wechat_id }}')">
+                                <i class="bi bi-trash"></i> 删除
                             </button>
                         </td>
                     </tr>
@@ -239,15 +256,26 @@
             <div class="modal-body">
                 <form id="editCustomerForm">
                     <input type="hidden" id="editCustomerId" name="customer_id">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">系统用户账号</label>
+                            <input type="text" class="form-control" id="editSystemUser" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">微信好友信息</label>
+                            <input type="text" class="form-control" id="editWechatInfo" readonly>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">价值等级</label>
                                 <select class="form-select" id="editValueLevel" name="value_level">
-                                    <option value="高价值">高价值</option>
-                                    <option value="中价值">中价值</option>
-                                    <option value="普通">普通</option>
-                                    <option value="低价值">低价值</option>
+                                    <option value="高价值客户">高价值客户</option>
+                                    <option value="潜力用户">潜力用户</option>
+                                    <option value="沉默用户">沉默用户</option>
+                                    <option value="已成交用户">已成交用户</option>
+                                    <option value="潜在用户">潜在用户</option>
                                 </select>
                             </div>
                         </div>
@@ -276,6 +304,62 @@
         </div>
     </div>
 </div>
+
+<!-- 新增客户画像模态框 -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增客户画像</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerForm">
+                    <div class="mb-3">
+                        <label class="form-label">选择微信好友</label>
+                        <select class="form-select" id="addContactSelect" name="contact_id" required>
+                            <option value="">请选择微信好友...</option>
+                        </select>
+                        <div class="form-text">选择要创建画像的微信好友</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">价值等级</label>
+                                <select class="form-select" id="addValueLevel" name="value_level">
+                                    <option value="潜在用户">潜在用户</option>
+                                    <option value="高价值客户">高价值客户</option>
+                                    <option value="潜力用户">潜力用户</option>
+                                    <option value="沉默用户">沉默用户</option>
+                                    <option value="已成交用户">已成交用户</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">活跃度评分</label>
+                                <input type="number" class="form-control" id="addActivityScore" name="activity_score" min="0" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">客户标签</label>
+                        <input type="text" class="form-control" id="addTags" name="tags" placeholder="输入标签，用逗号分隔">
+                        <div class="form-text">例如：新客户,潜在需求,待跟进</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">画像说明</label>
+                        <textarea class="form-control" id="addProfileDesc" name="profile_desc" rows="3" placeholder="详细描述客户特征..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" onclick="saveNewCustomer()">创建画像</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -285,22 +369,41 @@ function refreshData() {
 }
 
 function resetFilter() {
-    document.getElementById('filterForm').reset();
-    document.getElementById('filterForm').submit();
+	document.getElementById('filterForm').reset();
+	window.location.href = window.location.pathname;
 }
 
 function editCustomer(customerId) {
     fetch(`/admin/api/customer/${customerId}`)
         .then(response => response.json())
         .then(data => {
+            if (!data.success) {
+                alert('获取客户信息失败：' + data.message);
+                return;
+            }
+            
             document.getElementById('editCustomerId').value = customerId;
-            document.getElementById('editValueLevel').value = data.value_level || '普通';
+            document.getElementById('editValueLevel').value = data.value_level || '潜在用户';
             document.getElementById('editActivityScore').value = data.activity_score || 0;
             document.getElementById('editProfileDesc').value = data.profile_desc || '';
             
+            if (data.system_user) {
+                document.getElementById('editSystemUser').value = `${data.system_user.username} (${data.system_user.user_id})`;
+            }
+            
+            if (data.wechat_info) {
+                const wechatDisplay = data.wechat_info.remark || data.wechat_info.nickname || data.wechat_info.wechat_id;
+                document.getElementById('editWechatInfo').value = `${wechatDisplay} (${data.wechat_info.wechat_id})`;
+            }
+            
             if (data.tags) {
-                const tags = JSON.parse(data.tags);
-                const tagNames = tags.map(tag => tag.tag).join(', ');
+                let tagNames = '';
+                try {
+                    const tags = JSON.parse(data.tags);
+                    tagNames = tags.map(tag => tag.tag || tag).join(', ');
+                } catch (e) {
+                    tagNames = data.tags;
+                }
                 document.getElementById('editTags').value = tagNames;
             }
             
@@ -343,9 +446,88 @@ function saveCustomer() {
     });
 }
 
-function viewProfile(customerId) {
-    window.open(`/admin/customer/${customerId}/profile`, '_blank');
+function deleteCustomer(customerId, customerName) {
+    if (confirm(`确定要删除客户画像 "${customerName}" 吗？此操作不可撤销。`)) {
+        fetch(`/admin/api/customer/${customerId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('删除成功');
+                location.reload();
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败');
+        });
+    }
 }
+
+function loadContacts() {
+    fetch('/admin/api/contacts')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('addContactSelect');
+                select.innerHTML = '<option value="">请选择微信好友...</option>';
+                
+                data.contacts.forEach(contact => {
+                    const option = document.createElement('option');
+                    option.value = contact.id;
+                    option.textContent = contact.display_name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading contacts:', error);
+        });
+}
+
+function saveNewCustomer() {
+    const formData = new FormData(document.getElementById('addCustomerForm'));
+    
+    if (!formData.get('contact_id')) {
+        alert('请选择微信好友');
+        return;
+    }
+    
+    fetch('/admin/api/customer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            contact_id: parseInt(formData.get('contact_id')),
+            value_level: formData.get('value_level'),
+            activity_score: parseInt(formData.get('activity_score')),
+            profile_desc: formData.get('profile_desc'),
+            tags: formData.get('tags')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+            alert('创建成功');
+            location.reload();
+        } else {
+            alert('创建失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('创建失败');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadContacts();
+});
 
 function exportData() {
     const formData = new FormData(document.getElementById('exportForm'));

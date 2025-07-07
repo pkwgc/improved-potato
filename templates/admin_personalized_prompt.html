@@ -51,6 +51,248 @@
                     </form>
                 </div>
             </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-robot"></i> AI策略与话术模板管理</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>AI策略配置</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>策略名称</th>
+                                            <th>温度参数</th>
+                                            <th>最大Token</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if ai_strategies %}
+                                        {% for strategy in ai_strategies %}
+                                        <tr>
+                                            <td>{{ strategy.name }}</td>
+                                            <td>{{ strategy.temperature }}</td>
+                                            <td>{{ strategy.max_tokens }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editStrategy({{ strategy.id }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteStrategy({{ strategy.id }}, '{{ strategy.name }}')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">暂无AI策略</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm" onclick="addStrategy()">
+                                <i class="bi bi-plus"></i> 新增AI策略
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>话术模板管理</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>模板名称</th>
+                                            <th>行业</th>
+                                            <th>类型</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if all_templates %}
+                                        {% for template in all_templates %}
+                                        <tr>
+                                            <td>{{ template.name }}</td>
+                                            <td>{{ template.industry.name if template.industry else '通用' }}</td>
+                                            <td>{{ template.template_type }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editTemplate({{ template.id }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">暂无话术模板</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm" onclick="addTemplate()">
+                                <i class="bi bi-plus"></i> 新增话术模板
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-tags"></i> 占位符与客户画像关联管理</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>集中管理说明：</strong> 所有AI提示词、话术模板及占位符均在此页面统一管理。系统内任何占位符的新增、修改、删除都必须在此进行，禁止分散维护。
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6>可用占位符列表</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>占位符名称</th>
+                                            <th>描述</th>
+                                            <th>数据来源</th>
+                                            <th>示例值</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>{moments_content}</code></td>
+                                            <td>朋友圈内容</td>
+                                            <td>moments表</td>
+                                            <td>今天天气真好...</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="bi bi-lock"></i> 系统内置
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>{customer_name}</code></td>
+                                            <td>客户昵称</td>
+                                            <td>wechat_contacts表</td>
+                                            <td>张三</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="bi bi-lock"></i> 系统内置
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>{customer_profile}</code></td>
+                                            <td>客户画像</td>
+                                            <td>customer_profiles表</td>
+                                            <td>高价值客户，活跃度85%</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="bi bi-lock"></i> 系统内置
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>{intent_history}</code></td>
+                                            <td>意图历史</td>
+                                            <td>intent_tracking表</td>
+                                            <td>购买意向，咨询产品</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="bi bi-lock"></i> 系统内置
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm" onclick="addCustomPlaceholder()">
+                                <i class="bi bi-plus"></i> 新增自定义占位符
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI策略管理模态框 -->
+<div class="modal fade" id="aiStrategyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiStrategyModalTitle">新增AI策略</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="aiStrategyForm">
+                    <input type="hidden" id="strategyId" name="strategy_id">
+                    <div class="mb-3">
+                        <label for="strategyName" class="form-label">策略名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="strategyName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="strategyDescription" class="form-label">策略描述</label>
+                        <textarea class="form-control" id="strategyDescription" name="description" rows="2" placeholder="请输入策略描述"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="promptTemplate" class="form-label">提示词模板 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="promptTemplate" name="prompt_template" rows="6" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="systemMessage" class="form-label">系统消息</label>
+                        <textarea class="form-control" id="systemMessage" name="system_message" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="temperature" class="form-label">温度参数</label>
+                                <input type="number" class="form-control" id="temperature" name="temperature" 
+                                       min="0" max="2" step="0.1" value="0.7">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="maxTokens" class="form-label">最大Token数</label>
+                                <input type="number" class="form-control" id="maxTokens" name="max_tokens" 
+                                       min="100" max="8000" value="2000">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveAIStrategy()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteStrategyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除策略 "<span id="deleteStrategyName"></span>" 吗？</p>
+                <p class="text-muted">此操作不可撤销。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteStrategy()">删除</button>
+            </div>
         </div>
     </div>
 </div>
@@ -92,7 +334,6 @@
                 container.appendChild(row);
             });
             
-            // 更新隐藏输入字段
             hiddenInput.value = JSON.stringify(placeholders);
         }
         
@@ -111,8 +352,125 @@
             renderPlaceholders();
         });
         
-        // 初始渲染
         renderPlaceholders();
     });
+
+    let currentStrategyId = null;
+
+    function editStrategy(strategyId) {
+        fetch(`/api/get_ai_strategy/${strategyId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const strategy = data.strategy;
+                    document.getElementById('strategyId').value = strategy.id;
+                    document.getElementById('strategyName').value = strategy.name;
+                    document.getElementById('strategyDescription').value = strategy.description || '';
+                    document.getElementById('promptTemplate').value = strategy.prompt_template;
+                    document.getElementById('systemMessage').value = strategy.system_message || '';
+                    document.getElementById('temperature').value = strategy.temperature;
+                    document.getElementById('maxTokens').value = strategy.max_tokens;
+                    
+                    document.getElementById('aiStrategyModalTitle').textContent = '编辑AI策略';
+                    new bootstrap.Modal(document.getElementById('aiStrategyModal')).show();
+                } else {
+                    alert('获取策略信息失败：' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('获取策略信息失败');
+            });
+    }
+
+    function addStrategy() {
+        document.getElementById('aiStrategyForm').reset();
+        document.getElementById('strategyId').value = '';
+        document.getElementById('temperature').value = '0.7';
+        document.getElementById('maxTokens').value = '2000';
+        
+        document.getElementById('aiStrategyModalTitle').textContent = '新增AI策略';
+        new bootstrap.Modal(document.getElementById('aiStrategyModal')).show();
+    }
+
+    function saveAIStrategy() {
+        const form = document.getElementById('aiStrategyForm');
+        const formData = new FormData(form);
+        const strategyId = document.getElementById('strategyId').value;
+        
+        const data = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            prompt_template: formData.get('prompt_template'),
+            system_message: formData.get('system_message'),
+            temperature: parseFloat(formData.get('temperature')),
+            max_tokens: parseInt(formData.get('max_tokens'))
+        };
+
+        const url = strategyId ? `/api/edit_ai_strategy/${strategyId}` : '/api/add_ai_strategy';
+        const method = strategyId ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                bootstrap.Modal.getInstance(document.getElementById('aiStrategyModal')).hide();
+                location.reload();
+            } else {
+                alert('操作失败：' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('操作失败');
+        });
+    }
+
+    function deleteStrategy(strategyId, strategyName) {
+        currentStrategyId = strategyId;
+        document.getElementById('deleteStrategyName').textContent = strategyName;
+        new bootstrap.Modal(document.getElementById('deleteStrategyModal')).show();
+    }
+
+    function confirmDeleteStrategy() {
+        if (!currentStrategyId) return;
+
+        fetch(`/api/delete_ai_strategy/${currentStrategyId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                bootstrap.Modal.getInstance(document.getElementById('deleteStrategyModal')).hide();
+                location.reload();
+            } else {
+                alert('删除失败：' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败');
+        });
+    }
+
+    function editTemplate(templateId) {
+        alert('编辑话术模板功能开发中...');
+    }
+
+    function addTemplate() {
+        alert('新增话术模板功能开发中...');
+    }
+
+    function addCustomPlaceholder() {
+        alert('新增自定义占位符功能开发中...');
+    }
 </script>
 {% endblock %}

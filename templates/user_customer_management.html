@@ -98,6 +98,168 @@
     </div>
 </div>
 
+<!-- 跟踪配置 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-gear"></i> 我的跟踪配置</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 配置不同客户类型的跟踪策略，系统将根据您的设置自动执行跟踪任务
+                </div>
+            </div>
+        </div>
+        
+        <ul class="nav nav-tabs" id="trackingConfigTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="potential-tab" data-bs-toggle="tab" data-bs-target="#potential-config" type="button" role="tab">
+                    潜在客户
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="high-intent-tab" data-bs-toggle="tab" data-bs-target="#high-intent-config" type="button" role="tab">
+                    高意向客户
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="deal-tab" data-bs-toggle="tab" data-bs-target="#deal-config" type="button" role="tab">
+                    成交客户
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="trackingConfigTabContent">
+            <div class="tab-pane fade show active" id="potential-config" role="tabpanel">
+                <form id="potentialConfigForm" class="mt-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">跟踪总周期（天）</label>
+                            <input type="number" class="form-control" name="tracking_cycle_days" value="90" min="1" max="365">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">分期数量</label>
+                            <input type="number" class="form-control" name="tracking_periods" value="3" min="1" max="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">每期时长（天）</label>
+                            <input type="number" class="form-control" name="period_duration_days" value="30" min="1" max="90">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">每期最大触达次数</label>
+                            <input type="number" class="form-control" name="max_contacts_per_period" value="2" min="1" max="5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">触达间隔（天）</label>
+                            <input type="number" class="form-control" name="contact_interval_days" value="7" min="1" max="30">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">沉默判定阈值（期）</label>
+                            <input type="number" class="form-control" name="silence_threshold_periods" value="3" min="1" max="10">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="auto_tracking_enabled" checked>
+                                <label class="form-check-label">启用自动跟踪</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存潜在客户配置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="tab-pane fade" id="high-intent-config" role="tabpanel">
+                <form id="highIntentConfigForm" class="mt-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">跟踪总周期（天）</label>
+                            <input type="number" class="form-control" name="tracking_cycle_days" value="60" min="1" max="365">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">分期数量</label>
+                            <input type="number" class="form-control" name="tracking_periods" value="2" min="1" max="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">每期时长（天）</label>
+                            <input type="number" class="form-control" name="period_duration_days" value="30" min="1" max="90">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">每期最大触达次数</label>
+                            <input type="number" class="form-control" name="max_contacts_per_period" value="3" min="1" max="5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">触达间隔（天）</label>
+                            <input type="number" class="form-control" name="contact_interval_days" value="5" min="1" max="30">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">沉默判定阈值（期）</label>
+                            <input type="number" class="form-control" name="silence_threshold_periods" value="2" min="1" max="10">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="auto_tracking_enabled" checked>
+                                <label class="form-check-label">启用自动跟踪</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存高意向客户配置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="tab-pane fade" id="deal-config" role="tabpanel">
+                <form id="dealConfigForm" class="mt-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">跟踪总周期（天）</label>
+                            <input type="number" class="form-control" name="tracking_cycle_days" value="180" min="1" max="365">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">分期数量</label>
+                            <input type="number" class="form-control" name="tracking_periods" value="6" min="1" max="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">每期时长（天）</label>
+                            <input type="number" class="form-control" name="period_duration_days" value="30" min="1" max="90">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">每期最大触达次数</label>
+                            <input type="number" class="form-control" name="max_contacts_per_period" value="1" min="1" max="5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">触达间隔（天）</label>
+                            <input type="number" class="form-control" name="contact_interval_days" value="14" min="1" max="30">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">沉默判定阈值（期）</label>
+                            <input type="number" class="form-control" name="silence_threshold_periods" value="6" min="1" max="10">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="auto_tracking_enabled" checked>
+                                <label class="form-check-label">启用自动跟踪</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> 保存成交客户配置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 客户列表 -->
 <div class="card">
     <div class="card-header">
@@ -115,13 +277,14 @@
                         <th>意向等级</th>
                         <th>标签</th>
                         <th>自动跟踪</th>
+                        <th>AI批准设置</th>
                         <th>最近活动</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for contact in contacts %}
-                    <tr>
+                    <tr data-contact-id="{{ contact.id }}">
                         <td>
                             <input type="checkbox" class="customer-checkbox" value="{{ contact.id }}">
                         </td>
@@ -149,13 +312,13 @@
                                 <span class="text-muted">未知</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if contact.tags %}
-                                {% for tag in contact.tags[:2] %}
+                        <td class="tags-cell">
+                            {% if contact.tag_list and contact.tag_list|length > 0 %}
+                                {% for tag in contact.tag_list[:2] %}
                                     <span class="badge bg-light text-dark me-1">{{ tag }}</span>
                                 {% endfor %}
-                                {% if contact.tags|length > 2 %}
-                                    <span class="badge bg-light text-dark">+{{ contact.tags|length - 2 }}</span>
+                                {% if contact.tag_list|length > 2 %}
+                                    <span class="badge bg-light text-dark">+{{ contact.tag_list|length - 2 }}</span>
                                 {% endif %}
                             {% else %}
                                 <span class="text-muted">无标签</span>
@@ -166,6 +329,17 @@
                                 <input class="form-check-input" type="checkbox" 
                                        {% if contact.auto_follow_enabled %}checked{% endif %}
                                        onchange="toggleAutoFollow({{ contact.id }}, this.checked)">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" 
+                                       {% if not contact.require_approval %}checked{% endif %}
+                                       onchange="toggleApprovalSetting({{ contact.id }}, !this.checked)"
+                                       title="开启后AI画像更新将直接推送，无需批准">
+                                <label class="form-check-label" style="font-size: 12px;">
+                                    {% if contact.require_approval %}需批准{% else %}直接推送{% endif %}
+                                </label>
                             </div>
                         </td>
                         <td>
@@ -185,6 +359,9 @@
                                 </button>
                                 <button class="btn btn-outline-success" onclick="sendMessage({{ contact.id }})">
                                     <i class="bi bi-send"></i> 发消息
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="manualFollow({{ contact.id }})">
+                                    <i class="bi bi-send-plus"></i> 手动跟踪
                                 </button>
                             </div>
                         </td>
@@ -469,6 +646,38 @@ function executeSendMessage() {
     .catch(error => {
         console.error('Error:', error);
         alert('发送失败');
+
+function toggleApprovalSetting(contactId, requireApproval) {
+    fetch(`/user/api/contact/${contactId}/approval-setting`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            require_approval: requireApproval
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            const checkbox = event.target;
+            const label = checkbox.nextElementSibling;
+            if (label) {
+                label.textContent = requireApproval ? '需批准' : '直接推送';
+            }
+        } else {
+            showNotification(data.error || '操作失败', 'error');
+            event.target.checked = !event.target.checked;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('操作失败', 'error');
+        event.target.checked = !event.target.checked;
+    });
+}
+
     });
 }
 
@@ -491,6 +700,217 @@ document.getElementById('filterForm').addEventListener('submit', function(e) {
     }
     
     window.location.href = `${window.location.pathname}?${params.toString()}`;
+});
+
+// WebSocket连接用于接收实时画像更新
+let socket = null;
+
+function initWebSocket() {
+    if (typeof io !== 'undefined') {
+        socket = io('http://localhost:5000');
+        
+        socket.on('connect', function() {
+            console.log('WebSocket连接成功');
+            // 认证用户
+            socket.emit('authenticate', {
+                user_id: '{{ session.user_id }}'
+            });
+        });
+        
+        socket.on('auth_success', function(data) {
+            console.log('WebSocket认证成功:', data);
+        });
+        
+        socket.on('new_message', function(data) {
+            if (data.type === 'profile_update') {
+                console.log('收到画像更新:', data);
+                handleProfileUpdate(data);
+            }
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('WebSocket连接断开');
+        });
+    }
+}
+
+function handleProfileUpdate(data) {
+    const content = data.content;
+    const contactId = content.contact_id;
+    const tags = content.tags;
+    
+    // 更新页面中对应联系人的标签显示
+    const contactRow = document.querySelector(`tr[data-contact-id="${contactId}"]`);
+    if (contactRow) {
+        const tagsCell = contactRow.querySelector('.tags-cell');
+        if (tagsCell) {
+            let tagsHtml = '';
+            if (tags && tags.length > 0) {
+                tags.slice(0, 2).forEach(tag => {
+                    tagsHtml += `<span class="badge bg-light text-dark me-1">${tag}</span>`;
+                });
+                if (tags.length > 2) {
+                    tagsHtml += `<span class="badge bg-light text-dark">+${tags.length - 2}</span>`;
+                }
+            } else {
+                tagsHtml = '<span class="text-muted">无标签</span>';
+            }
+            tagsCell.innerHTML = tagsHtml;
+        }
+        
+        // 显示通知
+        showNotification(`${content.contact_name} 的画像已更新`, 'success');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
+}
+
+function loadTrackingConfigs() {
+    fetch('/user/api/tracking-config')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const configs = data.configs;
+                
+                ['潜在客户', '高意向客户', '成交客户'].forEach(customerType => {
+                    const config = configs[customerType];
+                    if (config) {
+                        const formId = getFormIdByCustomerType(customerType);
+                        const form = document.getElementById(formId);
+                        if (form) {
+                            fillFormWithConfig(form, config);
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('加载跟踪配置失败:', error);
+        });
+}
+
+function getFormIdByCustomerType(customerType) {
+    const mapping = {
+        '潜在客户': 'potentialConfigForm',
+        '高意向客户': 'highIntentConfigForm',
+        '成交客户': 'dealConfigForm'
+    };
+    return mapping[customerType];
+}
+
+function fillFormWithConfig(form, config) {
+    Object.keys(config).forEach(key => {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input) {
+            if (input.type === 'checkbox') {
+                input.checked = config[key];
+            } else {
+                input.value = config[key];
+            }
+        }
+    });
+}
+
+function saveTrackingConfig(customerType, formId) {
+    const form = document.getElementById(formId);
+    const formData = new FormData(form);
+    
+    const configData = {
+        customer_type: customerType,
+        tracking_cycle_days: parseInt(formData.get('tracking_cycle_days')),
+        tracking_periods: parseInt(formData.get('tracking_periods')),
+        period_duration_days: parseInt(formData.get('period_duration_days')),
+        max_contacts_per_period: parseInt(formData.get('max_contacts_per_period')),
+        contact_interval_days: parseInt(formData.get('contact_interval_days')),
+        silence_threshold_periods: parseInt(formData.get('silence_threshold_periods')),
+        auto_tracking_enabled: formData.get('auto_tracking_enabled') === 'on'
+    };
+    
+    fetch('/user/api/tracking-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`${customerType}配置保存成功`, 'success');
+        } else {
+            showNotification(`保存失败：${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('保存配置失败:', error);
+        showNotification('保存配置失败', 'error');
+    });
+}
+
+function manualFollow(contactId) {
+    if (confirm('确定要手动触发此联系人的跟踪消息吗？')) {
+        fetch(`/user/api/contact/${contactId}/manual-follow`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message_type: '关怀'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('跟踪消息已安排发送', 'success');
+            } else {
+                showNotification(`操作失败：${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('手动跟踪失败:', error);
+            showNotification('手动跟踪失败', 'error');
+        });
+    }
+}
+
+// 页面加载完成后初始化WebSocket和跟踪配置
+document.addEventListener('DOMContentLoaded', function() {
+    initWebSocket();
+    loadTrackingConfigs();
+    
+    // 绑定表单提交事件
+    document.getElementById('potentialConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTrackingConfig('潜在客户', 'potentialConfigForm');
+    });
+    
+    document.getElementById('highIntentConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTrackingConfig('高意向客户', 'highIntentConfigForm');
+    });
+    
+    document.getElementById('dealConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTrackingConfig('成交客户', 'dealConfigForm');
+    });
 });
 </script>
 {% endblock %}

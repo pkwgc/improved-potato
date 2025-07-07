@@ -221,7 +221,7 @@
     
     // 过滤销售数据
     function filterSales(period) {
-        window.location.href = `{{ url_for('user_sales') }}?period=${period}`;
+        window.location.href = `{{ url_for('user.user_sales') }}?period=${period}`;
     }
 </script>
 {% endblock %}

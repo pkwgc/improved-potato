@@ -57,43 +57,37 @@
     </div>
 </div>
 
-<!-- 跟踪配置 -->
+<!-- 跟踪配置说明 -->
 <div class="card mb-4">
     <div class="card-header">
-        <h5><i class="bi bi-gear"></i> 全局跟踪配置</h5>
+        <h5><i class="bi bi-info-circle"></i> 跟踪配置说明</h5>
     </div>
     <div class="card-body">
-        <form id="globalConfigForm" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">成交客户跟踪频率</label>
-                <select class="form-select" name="deal_frequency">
-                    <option value="daily">每日</option>
-                    <option value="weekly" selected>每周</option>
-                    <option value="monthly">每月</option>
-                </select>
+        <div class="alert alert-info">
+            <h6><i class="bi bi-arrow-right-circle"></i> 配置权限已下放</h6>
+            <p class="mb-2">跟踪周期、频率和沉默判定等配置已迁移到用户后台，每个用户可以在"客户管理"页面中自主配置不同客户类型的跟踪策略。</p>
+            <p class="mb-0">管理员仍然保留对话术模板的完全控制权，确保消息内容的统一性和专业性。</p>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>用户可配置项：</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> 跟踪总周期和分期设置</li>
+                    <li><i class="bi bi-check-circle text-success"></i> 每期触达频次和间隔</li>
+                    <li><i class="bi bi-check-circle text-success"></i> 沉默判定规则</li>
+                    <li><i class="bi bi-check-circle text-success"></i> 自动跟踪开关</li>
+                </ul>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">高意向客户跟踪频率</label>
-                <select class="form-select" name="high_intent_frequency">
-                    <option value="daily" selected>每日</option>
-                    <option value="weekly">每周</option>
-                    <option value="monthly">每月</option>
-                </select>
+            <div class="col-md-6">
+                <h6>管理员专属权限：</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-shield-check text-primary"></i> 话术模板管理</li>
+                    <li><i class="bi bi-shield-check text-primary"></i> 全局消息内容控制</li>
+                    <li><i class="bi bi-shield-check text-primary"></i> 系统级配置管理</li>
+                    <li><i class="bi bi-shield-check text-primary"></i> 跟踪数据统计查看</li>
+                </ul>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">潜在客户跟踪频率</label>
-                <select class="form-select" name="potential_frequency">
-                    <option value="daily">每日</option>
-                    <option value="weekly" selected>每周</option>
-                    <option value="monthly">每月</option>
-                </select>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> 保存配置
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -142,6 +136,78 @@
         </div>
     </div>
 </div>
+
+<!-- AI策略绑定管理 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-link-45deg"></i> AI策略绑定管理</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>联系人列表</h6>
+                <div class="border rounded p-3" style="height: 400px; overflow-y: auto;">
+                    <div class="mb-3">
+                        <input type="text" class="form-control form-control-sm" id="contactSearch" placeholder="搜索联系人...">
+                    </div>
+                    <div id="contactList">
+                        <!-- 联系人列表将通过AJAX加载 -->
+                        <div class="text-center text-muted">
+                            <i class="bi bi-hourglass-split"></i> 加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6>AI策略选择</h6>
+                <div class="border rounded p-3" style="height: 400px; overflow-y: auto;">
+                    <div class="mb-3">
+                        <select class="form-select" id="strategySelect">
+                            <option value="">选择AI策略...</option>
+                            {% for strategy in ai_strategies %}
+                            <option value="{{ strategy.id }}">{{ strategy.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-primary btn-sm" onclick="bindStrategy()" disabled id="bindBtn">
+                            <i class="bi bi-link"></i> 绑定策略
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="unbindStrategy()" disabled id="unbindBtn">
+                            <i class="bi bi-unlink"></i> 解除绑定
+                        </button>
+                    </div>
+                    <div id="strategyInfo" class="mt-3">
+                        <div class="text-muted">请选择AI策略查看详情</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 当前绑定关系表格 -->
+        <div class="mt-4">
+            <h6>当前绑定关系</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>联系人</th>
+                            <th>微信ID</th>
+                            <th>绑定策略</th>
+                            <th>绑定时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bindingTable">
+                        <!-- 绑定关系将通过AJAX加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 <!-- 主动消息记录 -->
 <div class="card">
@@ -380,39 +446,322 @@ function viewMessage(messageId) {
         });
 }
 
-document.getElementById('globalConfigForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    
-    fetch('/admin/api/proactive-config', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            deal_frequency: formData.get('deal_frequency'),
-            high_intent_frequency: formData.get('high_intent_frequency'),
-            potential_frequency: formData.get('potential_frequency')
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('配置保存成功');
-        } else {
-            alert('保存失败：' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('保存失败');
-    });
-});
+// 全局配置表单已移除，不再需要事件监听器
 
 document.querySelector('#templateModal').addEventListener('hidden.bs.modal', function() {
     document.getElementById('templateForm').reset();
     document.getElementById('templateId').value = '';
     document.querySelector('#templateModal .modal-title').textContent = '话术模板';
 });
+
+let selectedContacts = [];
+let currentStrategy = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadContacts();
+    loadBindingRelations();
+    
+    const strategySelect = document.getElementById('strategySelect');
+    if (strategySelect) {
+        strategySelect.addEventListener('change', function() {
+            const strategyId = this.value;
+            if (strategyId) {
+                loadStrategyInfo(strategyId);
+                currentStrategy = strategyId;
+            } else {
+                document.getElementById('strategyInfo').innerHTML = '<div class="text-muted">请选择AI策略查看详情</div>';
+                currentStrategy = null;
+            }
+            updateBindButtons();
+        });
+    }
+
+    const contactSearch = document.getElementById('contactSearch');
+    if (contactSearch) {
+        contactSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filterContacts(searchTerm);
+        });
+    }
+});
+
+function loadContacts() {
+    fetch('/api/admin/contacts')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayContacts(data.contacts);
+            } else {
+                const contactList = document.getElementById('contactList');
+                if (contactList) {
+                    contactList.innerHTML = '<div class="text-danger">加载联系人失败</div>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const contactList = document.getElementById('contactList');
+            if (contactList) {
+                contactList.innerHTML = '<div class="text-danger">加载联系人失败</div>';
+            }
+        });
+}
+
+function displayContacts(contacts) {
+    const contactList = document.getElementById('contactList');
+    if (!contactList) return;
+    
+    if (contacts.length === 0) {
+        contactList.innerHTML = '<div class="text-muted">暂无联系人</div>';
+        return;
+    }
+
+    let html = '';
+    contacts.forEach(contact => {
+        const isSelected = selectedContacts.includes(contact.id);
+        const strategyBadge = contact.ai_strategy_name ? 
+            `<span class="badge bg-info ms-2">${contact.ai_strategy_name}</span>` : 
+            '<span class="badge bg-secondary ms-2">未绑定</span>';
+        
+        html += `
+            <div class="contact-item border-bottom py-2" data-contact-id="${contact.id}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="contact_${contact.id}" 
+                           ${isSelected ? 'checked' : ''} onchange="toggleContact(${contact.id})">
+                    <label class="form-check-label w-100" for="contact_${contact.id}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${contact.nickname || contact.remark || contact.wechat_id}</strong><br>
+                                <small class="text-muted">${contact.wechat_id}</small>
+                            </div>
+                            ${strategyBadge}
+                        </div>
+                    </label>
+                </div>
+            </div>
+        `;
+    });
+    contactList.innerHTML = html;
+}
+
+function filterContacts(searchTerm) {
+    const contactItems = document.querySelectorAll('.contact-item');
+    contactItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function toggleContact(contactId) {
+    const index = selectedContacts.indexOf(contactId);
+    if (index > -1) {
+        selectedContacts.splice(index, 1);
+    } else {
+        selectedContacts.push(contactId);
+    }
+    updateBindButtons();
+}
+
+function updateBindButtons() {
+    const bindBtn = document.getElementById('bindBtn');
+    const unbindBtn = document.getElementById('unbindBtn');
+    
+    if (bindBtn && unbindBtn) {
+        const hasSelection = selectedContacts.length > 0;
+        const hasStrategy = currentStrategy !== null;
+        
+        bindBtn.disabled = !(hasSelection && hasStrategy);
+        unbindBtn.disabled = !hasSelection;
+    }
+}
+
+function loadStrategyInfo(strategyId) {
+    fetch(`/api/get_ai_strategy/${strategyId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const strategy = data.strategy;
+                const strategyInfo = document.getElementById('strategyInfo');
+                if (strategyInfo) {
+                    strategyInfo.innerHTML = `
+                        <div class="card">
+                            <div class="card-body p-3">
+                                <h6 class="card-title">${strategy.name}</h6>
+                                <p class="card-text small">${strategy.description || '无描述'}</p>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">温度: ${strategy.temperature}</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Token: ${strategy.max_tokens}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+function bindStrategy() {
+    if (selectedContacts.length === 0 || !currentStrategy) {
+        alert('请选择联系人和AI策略');
+        return;
+    }
+
+    const data = {
+        contact_ids: selectedContacts,
+        strategy_id: parseInt(currentStrategy)
+    };
+
+    fetch('/api/admin/bind_strategy', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`成功绑定 ${selectedContacts.length} 个联系人到AI策略`);
+            selectedContacts = [];
+            loadContacts();
+            loadBindingRelations();
+            updateBindButtons();
+        } else {
+            alert('绑定失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('绑定失败');
+    });
+}
+
+function unbindStrategy() {
+    if (selectedContacts.length === 0) {
+        alert('请选择要解除绑定的联系人');
+        return;
+    }
+
+    if (!confirm(`确定要解除 ${selectedContacts.length} 个联系人的AI策略绑定吗？`)) {
+        return;
+    }
+
+    const data = {
+        contact_ids: selectedContacts
+    };
+
+    fetch('/api/admin/unbind_strategy', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`成功解除 ${selectedContacts.length} 个联系人的绑定`);
+            selectedContacts = [];
+            loadContacts();
+            loadBindingRelations();
+            updateBindButtons();
+        } else {
+            alert('解除绑定失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('解除绑定失败');
+    });
+}
+
+function loadBindingRelations() {
+    fetch('/api/admin/binding_relations')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayBindingRelations(data.relations);
+            } else {
+                const bindingTable = document.getElementById('bindingTable');
+                if (bindingTable) {
+                    bindingTable.innerHTML = '<tr><td colspan="5" class="text-center text-muted">加载绑定关系失败</td></tr>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const bindingTable = document.getElementById('bindingTable');
+            if (bindingTable) {
+                bindingTable.innerHTML = '<tr><td colspan="5" class="text-center text-muted">加载绑定关系失败</td></tr>';
+            }
+        });
+}
+
+function displayBindingRelations(relations) {
+    const tbody = document.getElementById('bindingTable');
+    if (!tbody) return;
+    
+    if (relations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">暂无绑定关系</td></tr>';
+        return;
+    }
+
+    let html = '';
+    relations.forEach(relation => {
+        html += `
+            <tr>
+                <td><strong>${relation.contact_name}</strong></td>
+                <td><code>${relation.wechat_id}</code></td>
+                <td><span class="badge bg-primary">${relation.strategy_name}</span></td>
+                <td>${relation.bind_time}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="unbindSingle(${relation.contact_id})">
+                        <i class="bi bi-unlink"></i> 解除
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+function unbindSingle(contactId) {
+    if (!confirm('确定要解除此联系人的AI策略绑定吗？')) {
+        return;
+    }
+
+    fetch('/api/admin/unbind_strategy', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contact_ids: [contactId] })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('成功解除绑定');
+            loadContacts();
+            loadBindingRelations();
+        } else {
+            alert('解除绑定失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('解除绑定失败');
+    });
+}
 </script>
 {% endblock %}

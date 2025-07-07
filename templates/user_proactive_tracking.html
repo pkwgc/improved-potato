@@ -1,0 +1,144 @@
+{% extends "user_base.html" %}
+
+{% block title %}主动跟踪管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-graph-up-arrow"></i> 主动跟踪管理</h2>
+                <button class="btn btn-primary" onclick="refreshData()">
+                    <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">启用跟踪联系人</h5>
+                            <h2 class="text-primary">{{ tracking_stats.enabled_count }}</h2>
+                            <p class="card-text">已启用主动跟踪的联系人数量</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">今日发送</h5>
+                            <h2 class="text-success">{{ tracking_stats.today_sent }}</h2>
+                            <p class="card-text">今日已发送的跟踪消息数量</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">平均回复率</h5>
+                            <h2 class="text-info">{{ tracking_stats.response_rate }}%</h2>
+                            <p class="card-text">客户对跟踪消息的回复率</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">待发送</h5>
+                            <h2 class="text-warning">{{ tracking_stats.pending_count }}</h2>
+                            <p class="card-text">等待发送的跟踪消息数量</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-clock-history"></i> 跟踪消息记录</h5>
+                </div>
+                <div class="card-body">
+                    {% if proactive_messages %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>联系人</th>
+                                    <th>消息类型</th>
+                                    <th>发送状态</th>
+                                    <th>计划时间</th>
+                                    <th>实际发送时间</th>
+                                    <th>是否回复</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for message in proactive_messages %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <strong>{{ message.contact.nickname or message.contact.wechat_id }}</strong>
+                                                {% if message.contact.remark %}
+                                                <br><small class="text-muted">{{ message.contact.remark }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ message.message_type }}</span>
+                                    </td>
+                                    <td>
+                                        {% if message.status == 'sent' %}
+                                        <span class="badge bg-success">已发送</span>
+                                        {% elif message.status == 'pending' %}
+                                        <span class="badge bg-warning">待发送</span>
+                                        {% elif message.status == 'failed' %}
+                                        <span class="badge bg-danger">拒绝发送</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ message.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if message.scheduled_time %}
+                                        {{ message.scheduled_time.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                        <span class="text-muted">立即发送</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if message.sent_time %}
+                                        {{ message.sent_time.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                        <span class="text-muted">未发送</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if message.response_received %}
+                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> 已回复</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary"><i class="bi bi-dash-circle"></i> 未回复</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">暂无跟踪消息记录</h4>
+                        <p class="text-muted">当系统开始主动跟踪客户时，相关记录将显示在这里</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshData() {
+    location.reload();
+}
+</script>
+{% endblock %}

@@ -244,29 +244,38 @@
     }
     
     /* 消息区域样式 */
-    .message-section {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        background: white;
-        position: relative;
-    }
+	.message-section {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    position: relative;
+}
     
-    .chat-header {
-        background: white;
-        padding: 20px;
-        border-bottom: 1px solid #e9ecef;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        flex-shrink: 0;
-    }
     
-    .messages-container {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        background: #f5f6fa;
-        min-height: 0; /* 重要：确保flex子元素可以正确收缩 */
-    }
+	.chat-header {
+    /* 头部高度固定，不需要改动 */
+    background: white;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+    
+   
+   .messages-container {
+    /* * 这是核心改动：
+     * 使用 calc() 精确计算高度。
+     * 100% 指的是父容器 .message-section 的完整高度。
+     * 81px 是 .chat-header 的大致高度 (padding 40px + line-height ~41px)。
+     * 105px 是 .input-section 的大致高度 (padding 40px + textarea + buttons)。
+     * 您可能需要根据实际情况微调这两个数值。
+    */
+    height: calc(100% - 81px - 105px);
+    overflow-y: auto;        /* 内容超出时滚动 */
+    padding: 20px;
+    background: #f5f6fa;
+}
     
     /* 消息样式 */
     .message {
@@ -330,15 +339,13 @@
     }
     
     /* 输入区域样式 - 固定在底部 */
-    .input-section {
-        background: white;
-        border-top: 1px solid #e9ecef;
-        padding: 20px;
-        flex-shrink: 0;
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-    }
+	.input-section {
+    /* 输入区域高度固定，不需要改动 */
+    background: white;
+    border-top: 1px solid #e9ecef;
+    padding: 20px;
+    flex-shrink: 0;
+}
     
     .message-input-container {
         display: flex;
@@ -517,18 +524,7 @@
         transform: rotate(180deg);
     }
     
-    /* 响应式设计 */
-    @media (max-width: 768px) {
-        .account-sidebar {
-            display: none;
-        }
-        
-        .col-md-3, .col-md-4, .col-md-5 {
-            flex: 0 0 100%;
-            max-width: 100%;
-        }
-    }
-	    /* 表情面板样式 */
+	/* 表情面板样式 */
     .emoji-panel {
         position: absolute;
         bottom: 70px;
@@ -561,19 +557,67 @@
     .emoji-item:hover {
         transform: scale(1.2);
     }
+    
+    /* --- 新增：H5手机端响应式设计 --- */
+    .mobile-back-button {
+        display: none; /* 默认在PC端隐藏 */
+    }
+
+    @media (max-width: 768px) {
+        .account-sidebar {
+            display: none; /* 在手机端隐藏左侧账号列表 */
+        }
+        
+        .col-md-3, .col-md-4, .col-md-5 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            height: 100%;
+        }
+
+        .main-container, .container-fluid {
+            height: 100vh;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .row.h-100 {
+            height: 100% !important;
+        }
+        
+        /* 手机端视图切换逻辑 */
+        .mobile-hidden {
+            display: none !important;
+        }
+        
+        /* 显示返回按钮 */
+        .mobile-back-button {
+            display: block;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #333;
+            margin-right: 15px;
+            text-decoration: none;
+        }
+
+        /* 调整聊天头部的AI开关 */
+        .ai-switch {
+            font-size: 0.8rem;
+        }
+    }
+
 </style>
 
 <div class="container-fluid py-4">
     <div class="main-container">
         <div class="row h-100 g-0">
-            <!-- 左侧微信账号列表 -->
             <div class="col-md-3 account-sidebar">
                 <div class="account-header">
                     <h5 class="mb-0">
                         <i class="bi bi-wechat me-2"></i>微信账号
                     </h5>
                 </div>
-                <!-- 微信账号列表 -->
                 <div id="wechatAccountsList">
                     <div class="empty-state p-5">
                         <div class="loading-spinner"></div>
@@ -582,9 +626,7 @@
                 </div>
             </div>
             
-            <!-- 中间会话列表 -->
             <div class="col-md-4 contacts-section">
-                <!-- 当前账号信息 -->
                 <div class="current-account-info">
                     <div class="d-flex align-items-center">
                         <div class="avatar-container me-3" id="currentAccountAvatar">
@@ -602,7 +644,6 @@
                     </div>
                 </div>
                 
-                <!-- 会话分类标签页 -->
                 <div class="custom-tabs">
                     <ul class="nav nav-pills nav-fill">
                         <li class="nav-item">
@@ -617,7 +658,6 @@
                     </ul>
                 </div>
                 
-                <!-- 联系人搜索 -->
                 <div class="search-container">
                     <div class="position-relative">
                         <i class="bi bi-search search-icon"></i>
@@ -625,7 +665,6 @@
                     </div>
                 </div>
                 
-                <!-- 联系人/会话列表 -->
                 <div class="tab-content contacts-list">
                     <div class="tab-pane fade show active" id="allContacts">
                         <div id="contactsList" class="contacts-scroll-container">
@@ -654,19 +693,16 @@
                 </div>
             </div>
             
-            <!-- 右侧消息界面 -->
             <div class="col-md-5 h-100 d-flex flex-column">
-                <!-- 空状态 -->
                 <div class="empty-state flex-grow-1" id="emptyMessageContainer">
                     <i class="bi bi-chat-dots"></i>
                     <p>选择一个联系人开始聊天</p>
                 </div>
                 
-                <!-- 消息界面 -->
                 <div class="message-section d-none" id="messageContainer">
-                    <!-- 聊天头部 -->
                     <div class="chat-header">
                         <div class="d-flex align-items-center">
+                            <a href="#" class="mobile-back-button" id="backToContactsBtn"><i class="bi bi-arrow-left"></i></a>
                             <div class="avatar-container me-3" id="contactAvatar">
                                 <div class="avatar-placeholder">
                                     <i class="bi bi-person"></i>
@@ -688,7 +724,6 @@
                         </div>
                     </div>
                     
-                    <!-- 消息列表 -->
                     <div class="messages-container" id="messagesContainer">
                         <div class="empty-state">
                             <div class="loading-spinner"></div>
@@ -696,7 +731,6 @@
                         </div>
                     </div>
                     
-                    <!-- 消息输入框 -->
                     <div class="input-section">
                         <form id="messageForm">
                             <div class="message-input-container">
@@ -720,22 +754,17 @@
                     </div>
                 </div>
                 
-                <!-- 联系人设置（保留原有功能，但隐藏） -->
                 <div class="p-4 d-none" id="contactSettingsContainer">
-                    <!-- 原有设置内容保持不变 -->
-                </div>
+                    </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 表情面板 -->
 <div id="emojiPanel" class="emoji-panel shadow-sm">
     <div class="emoji-row"></div>
 </div>
 
-<!-- 保留原有的模态框 -->
-<!-- 添加关键词模态框 -->
 <div class="modal fade" id="addKeywordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -764,7 +793,6 @@
     </div>
 </div>
 
-<!-- 编辑关键词模态框 -->
 <div class="modal fade" id="editKeywordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -795,7 +823,6 @@
     </div>
 </div>
 
-<!-- 删除关键词确认模态框 -->
 <div class="modal fade" id="deleteKeywordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -842,11 +869,45 @@
                 }
             }, 1000);
         }
+
+        // --- 新增：H5视图管理 ---
+        const contactsSection = document.querySelector('.contacts-section');
+        const messageColumn = document.querySelector('.col-md-5.h-100'); // 这是消息界面的父级列
+        const backToContactsBtn = document.getElementById('backToContactsBtn');
+
+        function setupMobileView() {
+            if (window.innerWidth <= 768) {
+                // 默认隐藏消息界面，显示联系人列表
+                messageColumn.classList.add('mobile-hidden');
+                contactsSection.classList.remove('mobile-hidden');
+            } else {
+                // 在大屏幕上恢复正常显示
+                messageColumn.classList.remove('mobile-hidden');
+                contactsSection.classList.remove('mobile-hidden');
+            }
+        }
+
+        // 页面加载时设置
+        setupMobileView();
+        
+        // 窗口大小改变时重新设置
+        window.addEventListener('resize', setupMobileView);
+
+        // 返回按钮事件
+        if (backToContactsBtn) {
+            backToContactsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (window.innerWidth <= 768) {
+                    messageColumn.classList.add('mobile-hidden');
+                    contactsSection.classList.remove('mobile-hidden');
+                }
+            });
+        }
+        // --- H5视图管理结束 ---
     });
 </script>
 <script src="/static/js/contacts.js"></script>
 
-<!-- 消息提示音 -->
 <audio id="notificationSound" preload="auto">
     <source src="/static/audio/notification.mp3" type="audio/mpeg">
 </audio>
@@ -953,6 +1014,13 @@
                         if (messageContainer) messageContainer.classList.remove('d-none');
                         if (contactSettingsContainer) contactSettingsContainer.classList.add('d-none');
                         if (emptyMessageContainer) emptyMessageContainer.classList.add('d-none');
+                        
+                        // --- 新增：H5视图切换 ---
+                        if (window.innerWidth <= 768) {
+                            document.querySelector('.contacts-section').classList.add('mobile-hidden');
+                            document.querySelector('.col-md-5.h-100').classList.remove('mobile-hidden');
+                        }
+                        // --- H5视图切换结束 ---
                         
                         // 更新联系人信息
                         document.getElementById('contactName').textContent = showName;

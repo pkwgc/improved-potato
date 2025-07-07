@@ -74,7 +74,7 @@
                                 <h5><i class="bi bi-upload"></i> 上传库存和产品</h5>
                             </div>
                             <div class="card-body">
-                                <form action="{{ url_for('user_upload_inventory') }}" method="post" enctype="multipart/form-data">
+                                <form action="{{ url_for('user.user_upload_inventory') }}" method="post" enctype="multipart/form-data">
                                     <div class="mb-3">
                                         <label for="inventoryFile" class="form-label">选择库存文件</label>
                                         <input class="form-control" type="file" id="inventoryFile" name="inventory_file">
@@ -134,7 +134,7 @@
                                 <h5><i class="bi bi-robot"></i> AI投喂</h5>
                             </div>
                             <div class="card-body">
-                                <form action="{{ url_for('user_ai_feeding') }}" method="post">
+                                <form action="{{ url_for('user.user_ai_feeding') }}" method="post">
                                     <div class="mb-3">
                                         <label for="feedingContent" class="form-label">投喂内容</label>
                                         <textarea class="form-control" id="feedingContent" name="feeding_content" rows="3" placeholder="输入您想要投喂给AI的内容..."></textarea>

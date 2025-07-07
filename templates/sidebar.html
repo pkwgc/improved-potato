@@ -34,12 +34,12 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.path == url_for('admin_customer_profiling') %}active{% endif %}" href="{{ url_for('admin_customer_profiling') }}">
-                                <i class="bi bi-person-badge"></i> 客户画像
+                                <i class="bi bi-person-badge"></i> 客户好友画像统计
                             </a>
                         </li>
 						<li class="nav-item">
                             <a class="nav-link {% if request.path == url_for('admin_ai_profiling') %}active{% endif %}" href="{{ url_for('admin_ai_profiling') }}">
-                                <i class="bi bi-person-badge"></i> 朋友圈画像
+                                <i class="bi bi-person-badge"></i> 朋友圈AI画像
                             </a>
                         </li>
                         <li class="nav-item">
@@ -87,43 +87,43 @@
     <!-- 用户菜单项 -->
 	                    <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.path == url_for('user_dashboard') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">
+                            <a class="nav-link {% if request.path == url_for('user.user_dashboard') %}active{% endif %}" href="{{ url_for('user.user_dashboard') }}">
                                 <i class="bi bi-speedometer2"></i> 首页
                             </a>
                         </li>
                             <!--
                         <li class="nav-item">
-                            <a class="nav-link {% if request.path == url_for('user_chat_history') %}active{% endif %}" href="{{ url_for('user_chat_history') }}">
+                            <a class="nav-link {% if request.path == url_for('user.user_chat_history') %}active{% endif %}" href="{{ url_for('user.user_chat_history') }}">
                                 <i class="bi bi-chat-dots"></i> 聊天记录
                             </a>
                         </li>
                         -->
                         <li class="nav-item">
-                            <a class="nav-link {% if request.path == url_for('user_token_packages') %}active{% endif %}" href="{{ url_for('user_token_packages') }}">
+                            <a class="nav-link {% if request.path == url_for('user.user_token_packages') %}active{% endif %}" href="{{ url_for('user.user_token_packages') }}">
                                 <i class="bi bi-box"></i> 购买套餐
                             </a>
                         </li>
                             <!--
                                                     <li class="nav-item">
-                                                        <a class="nav-link {% if request.path == url_for('user_templates') %}active{% endif %}" href="{{ url_for('user_templates') }}">
+                                                        <a class="nav-link {% if request.path == url_for('user.user_templates') %}active{% endif %}" href="{{ url_for('user.user_templates') }}">
                                                             <i class="bi bi-person"></i> 模板选择
                                                         </a>
                                                     </li>
 													-->
                                                     <li class="nav-item">
-                                                        <a class="nav-link {% if request.path == url_for('user_inventory') %}active{% endif %}" href="{{ url_for('user_inventory') }}">
+                                                        <a class="nav-link {% if request.path == url_for('user.user_inventory') %}active{% endif %}" href="{{ url_for('user.user_inventory') }}">
                                                             <i class="bi bi-box-seam"></i> 库存管理
                                                         </a>
                                                     </li>
 													
 <!--
                                                     <li class="nav-item">
-                                                        <a class="nav-link {% if request.path == url_for('user_orders') %}active{% endif %}" href="{{ url_for('user_orders') }}">
+                                                        <a class="nav-link {% if request.path == url_for('user.user_orders') %}active{% endif %}" href="{{ url_for('user.user_orders') }}">
                                                             <i class="bi bi-cart"></i> 订单管理
                                                         </a>
                                                     </li>
                                                     <li class="nav-item">
-                                                        <a class="nav-link {% if request.path == url_for('user_sales') %}active{% endif %}" href="{{ url_for('user_sales') }}">
+                                                        <a class="nav-link {% if request.path == url_for('user.user_sales') %}active{% endif %}" href="{{ url_for('user.user_sales') }}">
                                                             <i class="bi bi-graph-up"></i> 销售统计
                                                         </a>
                                                     </li>
@@ -136,6 +136,11 @@
                         <li class="nav-item">
                             <a class="nav-link {% if request.path == url_for('user_customer_management') %}active{% endif %}" href="{{ url_for('user_customer_management') }}">
                                 <i class="bi bi-person-badge"></i> 客户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_proactive_tracking') %}active{% endif %}" href="{{ url_for('user_proactive_tracking') }}">
+                                <i class="bi bi-graph-up-arrow"></i> 主动跟踪管理
                             </a>
                         </li>
                         <li class="nav-item">
