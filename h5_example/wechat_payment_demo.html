@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeChat Payment Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .param-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .button-group {
+            margin-top: 20px;
+            text-align: center;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .sample-button {
+            background-color: #2196F3;
+        }
+        .sample-button:hover {
+            background-color: #1976D2;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .scheme-url {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WeChat Payment Demo</h1>
+        
+        <div class="info">
+            <strong>说明：</strong>此页面演示如何通过 H5 调用 Android 插件进行微信支付。
+            点击"调用微信支付"按钮将通过 scheme 协议启动 Android 应用。
+        </div>
+
+        <form id="paymentForm">
+            <div class="param-group">
+                <label for="prepayId">PrepayId:</label>
+                <input type="text" id="prepayId" name="prepayId" value="wx19162432174915e15d5011fb071e330000">
+            </div>
+
+            <div class="param-group">
+                <label for="appId">AppId:</label>
+                <input type="text" id="appId" name="appId" value="wxdf261c3b90ffbc25">
+            </div>
+
+            <div class="param-group">
+                <label for="partnerId">PartnerId:</label>
+                <input type="text" id="partnerId" name="partnerId" value="1236537302">
+            </div>
+
+            <div class="param-group">
+                <label for="nonceStr">NonceStr:</label>
+                <input type="text" id="nonceStr" name="nonceStr" value="tUQgTXocIAFakmHNEWGGDCtaXIQxKsOc">
+            </div>
+
+            <div class="param-group">
+                <label for="sign">Sign:</label>
+                <input type="text" id="sign" name="sign" value="82B29937ECE7A47F45409BD85B84C951">
+            </div>
+
+            <div class="param-group">
+                <label for="spreadField">SpreadField:</label>
+                <input type="text" id="spreadField" name="spreadField" value="Sign=WXPay">
+            </div>
+
+            <div class="param-group">
+                <label for="timestamp">Timestamp:</label>
+                <input type="text" id="timestamp" name="timestamp" value="1758270368">
+            </div>
+
+            <div class="button-group">
+                <button type="button" onclick="loadSampleData()" class="sample-button">加载示例数据</button>
+                <button type="button" onclick="invokeWeChatPay()">调用微信支付</button>
+                <button type="button" onclick="invokeWeChatPayAlt()">调用微信支付 (备用)</button>
+            </div>
+        </form>
+
+        <div id="schemeUrl" class="scheme-url" style="display: none;"></div>
+    </div>
+
+    <script>
+        function loadSampleData() {
+            document.getElementById('prepayId').value = 'wx19162432174915e15d5011fb071e330000';
+            document.getElementById('appId').value = 'wxdf261c3b90ffbc25';
+            document.getElementById('partnerId').value = '1236537302';
+            document.getElementById('nonceStr').value = 'tUQgTXocIAFakmHNEWGGDCtaXIQxKsOc';
+            document.getElementById('sign').value = '82B29937ECE7A47F45409BD85B84C951';
+            document.getElementById('spreadField').value = 'Sign=WXPay';
+            document.getElementById('timestamp').value = '1758270368';
+            
+            alert('示例数据已加载');
+        }
+
+        function getPaymentParams() {
+            return {
+                prepayId: document.getElementById('prepayId').value,
+                appId: document.getElementById('appId').value,
+                partnerId: document.getElementById('partnerId').value,
+                nonceStr: document.getElementById('nonceStr').value,
+                sign: document.getElementById('sign').value,
+                spreadField: document.getElementById('spreadField').value,
+                timestamp: document.getElementById('timestamp').value
+            };
+        }
+
+        function validateParams(params) {
+            const requiredFields = ['prepayId', 'appId', 'partnerId', 'nonceStr', 'sign', 'timestamp'];
+            for (let field of requiredFields) {
+                if (!params[field] || params[field].trim() === '') {
+                    alert(`请填写 ${field}`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function buildSchemeUrl(scheme, params) {
+            const queryParams = new URLSearchParams();
+            for (let key in params) {
+                if (params[key]) {
+                    queryParams.append(key, params[key]);
+                }
+            }
+            return `${scheme}://pay?${queryParams.toString()}`;
+        }
+
+        function invokeWeChatPay() {
+            const params = getPaymentParams();
+            
+            if (!validateParams(params)) {
+                return;
+            }
+
+            const schemeUrl = buildSchemeUrl('wechatpay', params);
+            
+            // Display the scheme URL
+            const urlDiv = document.getElementById('schemeUrl');
+            urlDiv.textContent = schemeUrl;
+            urlDiv.style.display = 'block';
+            
+            console.log('Invoking WeChat Pay with URL:', schemeUrl);
+            
+            try {
+                // Try to invoke the Android app
+                window.location.href = schemeUrl;
+            } catch (error) {
+                console.error('Error invoking WeChat Pay:', error);
+                alert('调用微信支付失败: ' + error.message);
+            }
+        }
+
+        function invokeWeChatPayAlt() {
+            const params = getPaymentParams();
+            
+            if (!validateParams(params)) {
+                return;
+            }
+
+            const schemeUrl = buildSchemeUrl('wxpay', params);
+            
+            // Display the scheme URL
+            const urlDiv = document.getElementById('schemeUrl');
+            urlDiv.textContent = schemeUrl;
+            urlDiv.style.display = 'block';
+            
+            console.log('Invoking WeChat Pay (alternative) with URL:', schemeUrl);
+            
+            try {
+                // Try to invoke the Android app with alternative scheme
+                window.location.href = schemeUrl;
+            } catch (error) {
+                console.error('Error invoking WeChat Pay:', error);
+                alert('调用微信支付失败: ' + error.message);
+            }
+        }
+
+        // Listen for payment result (if the Android app sends back a result)
+        window.addEventListener('message', function(event) {
+            console.log('Received message from Android:', event.data);
+            if (event.data && event.data.type === 'wechat_payment_result') {
+                const result = event.data.result;
+                alert(`支付结果: ${result.message} (Code: ${result.code})`);
+            }
+        });
+
+        // Handle page visibility change (when user returns from WeChat)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                console.log('Page became visible - user may have returned from WeChat');
+                // You can add logic here to check payment status
+            }
+        });
+    </script>
+</body>
+</html>
