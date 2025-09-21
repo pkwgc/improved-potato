@@ -13,7 +13,7 @@ import com.tencent.mm.opensdk.modelpay.PayResp;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.IWXAPIEventHandler;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
-import com.wechat.payment.PaymentHandler;
+import com.ct.client.PaymentHandler;
 
 public class WXPayEntryActivity extends Activity implements IWXAPIEventHandler {
     private static final String TAG = "WXPayEntryActivity";
