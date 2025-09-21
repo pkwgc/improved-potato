@@ -1,4 +1,4 @@
-package com.wechat.payment;
+package com.ct.client;
 
 import androidx.appcompat.app.AppCompatActivity;
 

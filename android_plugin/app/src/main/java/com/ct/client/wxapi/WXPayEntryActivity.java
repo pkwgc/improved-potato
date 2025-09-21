@@ -1,4 +1,4 @@
-package com.wechat.payment.wxapi;
+package com.ct.client.wxapi;
 
 import android.app.Activity;
 import android.content.Intent;

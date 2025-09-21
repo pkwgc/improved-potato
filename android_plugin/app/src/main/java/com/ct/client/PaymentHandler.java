@@ -1,4 +1,4 @@
-package com.wechat.payment;
+package com.ct.client;
 
 import android.content.Context;
 import android.util.Log;
@@ -28,11 +28,6 @@ public class PaymentHandler {
                 return false;
             }
 
-            if (!api.isWXAppSupportAPI()) {
-                Log.e(TAG, "WeChat version is too old");
-                Toast.makeText(context, "微信版本过低，请升级微信", Toast.LENGTH_SHORT).show();
-                return false;
-            }
 
             PayReq request = new PayReq();
             request.appId = params.appId;

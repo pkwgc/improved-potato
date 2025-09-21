@@ -1,4 +1,4 @@
-package com.wechat.payment;
+package com.ct.client;
 
 import android.os.Parcel;
 import android.os.Parcelable;

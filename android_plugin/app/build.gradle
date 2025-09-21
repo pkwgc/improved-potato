@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.wechat.payment'
+    namespace 'com.ct.client'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.wechat.payment"
+        applicationId "com.ct.client"
         minSdk 21
         targetSdk 34
         versionCode 1
